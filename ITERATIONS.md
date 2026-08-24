@@ -77,6 +77,373 @@ Naive UI 第一阶段已经验证了表格、筛选、分页、弹窗和消息�
 - 每一步至少运行 `npm run test -- --reporter=dot`、`npm run lint`、`npm run build` 和 `git diff --check`。
 - 页面变更必须启动开发服务器，在浏览器分别检查浅色和深色；若真实登录守卫阻止访问，必须明确记录受限项。
 
+### 第一步实施计划
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** 建立统一的浅色、深色语义主题，并以布局壳层和订单页作为首个完整视觉基准。
+
+**Architecture:** `src/theme/tokens.ts` 只负责主题数据与 CSS 变量映射，`src/theme/naive.ts` 只负责把 Token 转换为 Naive UI 覆盖。`App.vue` 根据 Pinia 主题状态同时选择 Naive UI 主题和根级 CSS 变量，现有布局与订单样式消费同一组变量。
+
+**Tech Stack:** Vue 3、TypeScript、Pinia、Naive UI、CSS、Vitest、Vue Test Utils。
+
+**Spec:** `ITERATIONS.md` 的“2026-08-24：双主题统一视觉重构”。
+
+#### 全局约束
+
+- 不修改订单字段、Mock 数据、CRUD 逻辑、API、路由或认证流程。
+- 不迁移用户、陪玩师、身份申请及其他业务页面的交互组件。
+- 不使用 document 级 `overflow-x: hidden` 掩盖表格溢出。
+- 保留现有 Pinia 主题持久化与侧边栏行为。
+- 保留未跟踪的 `pnpm-lock.yaml`，不纳入 npm 工作流。
+- 每个代码任务完成后同步更新本计划复选框，最终同步 README 变更记录。
+
+---
+
+#### 任务 1：双主题 Token 与根级 Provider
+
+**文件：**
+
+- 新建 `src/theme/tokens.ts`
+- 新建 `src/theme/naive.test.ts`
+- 修改 `src/theme/naive.ts`
+- 修改 `src/App.vue`
+- 修改 `src/App.test.ts`
+
+**接口：**
+
+- 产出 `ThemeTokens`、`lightThemeTokens`、`darkThemeTokens`。
+- 产出 `createThemeCssVars(tokens): Record<string, string>`。
+- 产出 `createNaiveThemeOverrides(tokens): GlobalThemeOverrides`、`lightNaiveThemeOverrides`、`darkNaiveThemeOverrides`。
+- `App.vue` 根据 `dark` 选择 Token、Naive UI 的 `darkTheme` 和根级 CSS 变量。
+
+- [ ] **步骤 1：编写 Token 与主题切换失败测试**
+
+```ts
+expect(lightThemeTokens.page).toBe('#f4f6fb')
+expect(darkThemeTokens.page).toBe('#0f121a')
+expect(createThemeCssVars(darkThemeTokens)['--app-surface']).toBe('#181c27')
+expect(createNaiveThemeOverrides(darkThemeTokens).common?.cardColor).toBe('#181c27')
+```
+
+在 `App.test.ts` 中挂载真实 `App`，断言 `.theme-root` 初始为 `data-theme="light"`；调用 `useAppStore().toggleDark()` 后等待 `nextTick()`，断言变为 `data-theme="dark"` 且 `--app-page` 为 `#0f121a`。
+
+- [ ] **步骤 2：运行失败测试**
+
+运行：
+
+```bash
+npm run test -- src/theme/naive.test.ts src/App.test.ts --reporter=verbose
+```
+
+预期：因 `tokens.ts`、双主题覆盖与 `.theme-root` 尚不存在而失败。
+
+- [ ] **步骤 3：实现语义 Token 与映射**
+
+`ThemeTokens` 必须使用以下完整接口：
+
+```ts
+export interface ThemeTokens {
+  primary: string
+  primaryHover: string
+  primaryPressed: string
+  page: string
+  surface: string
+  surfaceRaised: string
+  surfaceMuted: string
+  border: string
+  borderStrong: string
+  text: string
+  textMuted: string
+  hover: string
+  selected: string
+  shadow: string
+  shadowSubtle: string
+  tableHover: string
+  tableStriped: string
+  success: string
+  successSoft: string
+  warning: string
+  warningSoft: string
+  error: string
+  errorSoft: string
+  info: string
+  infoSoft: string
+}
+```
+
+根级 CSS 变量使用 `--app-*` 前缀，并完整映射布局和状态标签需要的值：
+
+```ts
+export function createThemeCssVars(tokens: ThemeTokens): Record<string, string> {
+  return {
+    '--app-page': tokens.page,
+    '--app-surface': tokens.surface,
+    '--app-surface-raised': tokens.surfaceRaised,
+    '--app-surface-muted': tokens.surfaceMuted,
+    '--app-border': tokens.border,
+    '--app-text': tokens.text,
+    '--app-text-muted': tokens.textMuted,
+    '--app-hover': tokens.hover,
+    '--app-selected': tokens.selected,
+    '--app-shadow': tokens.shadow,
+    '--app-shadow-subtle': tokens.shadowSubtle,
+    '--app-table-hover': tokens.tableHover,
+    '--app-table-striped': tokens.tableStriped,
+    '--app-success': tokens.success,
+    '--app-success-soft': tokens.successSoft,
+    '--app-warning': tokens.warning,
+    '--app-warning-soft': tokens.warningSoft,
+    '--app-error': tokens.error,
+    '--app-error-soft': tokens.errorSoft,
+    '--app-info': tokens.info,
+    '--app-info-soft': tokens.infoSoft,
+  }
+}
+```
+
+浅色基础表面值固定为 `#f4f6fb`、`#ffffff`、`#ffffff`、`#f7f8fc`；深色固定为 `#0f121a`、`#181c27`、`#1d2230`、`#202532`。品牌主色固定为 `#7257df`。
+
+- [ ] **步骤 4：实现 Naive UI 双主题覆盖与根级同步切换**
+
+`createNaiveThemeOverrides` 至少覆盖 `common` 的 `bodyColor`、`cardColor`、`modalColor`、`popoverColor`、`inputColor`、`tableColor`、`tableHeaderColor`、`tableColorHover`、`tableColorStriped`、`dividerColor`、`borderColor`、`textColor1`、`textColor2`、`textColor3`，并统一 Button、Input、DataTable、Card 和 Pagination 的中型尺寸及圆角。
+
+`App.vue` 在 Provider 内增加：
+
+```vue
+<div class="theme-root" :data-theme="dark ? 'dark' : 'light'" :style="themeCssVars">
+  <RouterView />
+</div>
+```
+
+- [ ] **步骤 5：运行测试和构建**
+
+```bash
+npm run test -- src/theme/naive.test.ts src/App.test.ts --reporter=verbose
+npm run build
+```
+
+预期：主题测试与生产构建通过。
+
+- [ ] **步骤 6：提交主题基础**
+
+```bash
+git add src/theme src/App.vue src/App.test.ts
+git commit -m "feat: add unified dual-theme tokens"
+```
+
+---
+
+#### 任务 2：布局壳层与公共表面层级
+
+**文件：**
+
+- 修改 `src/styles/index.css`
+- 修改 `src/styles/layout.css`
+- 修改 `src/styles/business.css`
+- 修改 `tests/layout.test.ts`
+
+**接口：**
+
+- 消费任务 1 提供的 `--app-*` CSS 变量。
+- 保留兼容变量 `--bg`、`--card`、`--text`、`--muted`、`--line`、`--hover`，其值改为引用 `--app-*`。
+- 产出统一的页面、顶部栏、Panel 和统计卡片表面层级。
+
+- [ ] **步骤 1：扩展布局失败测试**
+
+在测试根节点设置语义变量，创建 `.app`、`main > header`、`.panel` 和 `.business-stats article`，断言其计算背景和边框分别消费对应变量；保留现有 `main`、页面和表格宿主的滚动边界断言：
+
+```ts
+root.style.setProperty('--app-page', '#f4f6fb')
+root.style.setProperty('--app-surface', '#ffffff')
+root.style.setProperty('--app-border', '#e4e8f0')
+root.style.setProperty('--app-text', '#172033')
+root.style.setProperty('--app-text-muted', '#7d899d')
+root.style.setProperty('--app-hover', '#f2f0fb')
+expect(getComputedStyle(shell).backgroundColor).toBe('rgb(244, 246, 251)')
+expect(getComputedStyle(panel).backgroundColor).toBe('rgb(255, 255, 255)')
+expect(getComputedStyle(panel).borderColor).toBe('rgb(228, 232, 240)')
+```
+
+- [ ] **步骤 2：运行布局测试确认失败**
+
+```bash
+npm run test -- tests/layout.test.ts --reporter=verbose
+```
+
+预期：现有 `.app` 与 `.app.dark` 仍使用硬编码色值，新的语义表面断言失败。
+
+- [ ] **步骤 3：切换布局与公共卡片到语义变量**
+
+将 `.app` 的兼容变量改为：
+
+```css
+.app {
+  --bg: var(--app-page);
+  --card: var(--app-surface);
+  --text: var(--app-text);
+  --muted: var(--app-text-muted);
+  --line: var(--app-border);
+  --hover: var(--app-hover);
+  background: var(--bg);
+}
+```
+
+删除 `.app.dark` 中重复的表面硬编码。顶部栏增加轻边框和 `var(--app-shadow-subtle)`；Panel 与统计卡片使用 `var(--app-surface)`、`var(--app-border)`、`var(--app-shadow)`，不得改变布局尺寸和表格滚动规则。
+
+- [ ] **步骤 4：运行布局与主题测试**
+
+```bash
+npm run test -- tests/layout.test.ts src/App.test.ts --reporter=verbose
+npm run build
+```
+
+预期：两组测试和构建通过。
+
+- [ ] **步骤 5：提交布局表面统一**
+
+```bash
+git add src/styles tests/layout.test.ts
+git commit -m "style: unify themed application surfaces"
+```
+
+---
+
+#### 任务 3：订单页视觉基准
+
+**文件：**
+
+- 修改 `src/theme/naive.ts`
+- 修改 `src/styles/business.css`
+- 修改 `src/components/StatusTag.vue`
+- 修改 `src/components/StatusTag.test.ts`
+- 修改 `src/views/orders/OrdersView.vue`
+- 修改 `src/views/orders/OrdersView.test.ts`
+
+**接口：**
+
+- 消费任务 1 的 Naive UI 双主题覆盖和 `--app-*` CSS 变量。
+- 保持 `useCrudList` 的现有接口及订单页全部业务操作不变。
+- `StatusTag` 继续接受 `status` 与 `variant`，只调整语义类和视觉实现。
+
+- [ ] **步骤 1：编写订单视觉契约失败测试**
+
+在 `StatusTag.test.ts` 中验证“进行中”“待接单”“已完成”仍显示原文字并携带稳定的语义类：
+
+```ts
+expect(mount(StatusTag, { props: { status: '进行中' } }).classes()).toContain('status-info')
+expect(mount(StatusTag, { props: { status: '待接单' } }).classes()).toContain('status-warning')
+expect(mount(StatusTag, { props: { status: '已完成' } }).classes()).toContain('status-success')
+```
+
+在 `OrdersView.test.ts` 中继续使用真实 Naive UI Provider，并增加：
+
+```ts
+expect(wrapper.find('.order-toolbar').exists()).toBe(true)
+expect(wrapper.find('.n-data-table').exists()).toBe(true)
+expect(wrapper.find('[aria-label="状态筛选"]').exists()).toBe(true)
+```
+
+- [ ] **步骤 2：运行订单定向测试确认失败**
+
+```bash
+npm run test -- src/components/StatusTag.test.ts src/views/orders/OrdersView.test.ts --reporter=verbose
+```
+
+预期：现有状态标签尚无语义类，测试失败。
+
+- [ ] **步骤 3：统一 Naive UI 高交互组件视觉**
+
+在 `createNaiveThemeOverrides` 中为 Button、Input、Select、DataTable、Card、Modal、Pagination、Popconfirm 和 Message 提供一致的背景、边框、文字、圆角、hover 与焦点颜色。筛选控件高度固定为 38px，DataTable 正文字号为 13px、表头为 12px，表格斑马纹与 hover 使用 Token 中的低对比颜色。
+
+- [ ] **步骤 4：重绘订单工具栏、表格与状态标签**
+
+- 工具栏使用 `order-toolbar` 类，标题区与筛选区通过间距和弱分隔建立层级，不使用大块深灰输入底色。
+- 输入宽度保持 220px，状态选择保持 130px，导出按钮使用中性次级样式。
+- 订单 Panel、表格边界、分页和弹窗全部消费语义变量；保留 `.order-table-host { overflow-x: auto; }`。
+- 状态标签背景使用 `--app-info-soft`、`--app-warning-soft`、`--app-success-soft`，文字使用对应语义色。
+- 操作按钮采用低对比圆形 hover，危险操作只在 hover 和确认框中强调红色。
+
+订单页样式至少包含以下视觉契约：
+
+```css
+.order-toolbar {
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
+}
+
+.business-status.status-info {
+  color: var(--app-info);
+  background: var(--app-info-soft);
+}
+
+.business-status.status-warning {
+  color: var(--app-warning);
+  background: var(--app-warning-soft);
+}
+
+.business-status.status-success {
+  color: var(--app-success);
+  background: var(--app-success-soft);
+}
+```
+
+- [ ] **步骤 5：运行订单交互与布局回归测试**
+
+```bash
+npm run test -- src/components/StatusTag.test.ts src/views/orders/OrdersView.test.ts tests/layout.test.ts --reporter=verbose
+npm run build
+```
+
+预期：状态、搜索、筛选、弹窗与局部滚动测试通过，构建通过。
+
+- [ ] **步骤 6：提交订单视觉基准**
+
+```bash
+git add src/theme/naive.ts src/styles/business.css src/components/StatusTag.vue src/components/StatusTag.test.ts src/views/orders
+git commit -m "style: polish themed order management"
+```
+
+---
+
+#### 任务 4：文档与完整验证
+
+**文件：**
+
+- 修改 `README.md`
+- 修改 `ITERATIONS.md`
+
+**接口：**
+
+- README 描述当前真实实现，仅把第一步标记为完成。
+- 本迭代第二步和第三步保持未完成状态。
+
+- [ ] **步骤 1：同步文档**
+
+更新 README 的主题说明、订单页视觉说明和变更记录；勾选本迭代第一步已完成项，填写实际修改、验证结果、浏览器检查和已知限制。
+
+- [ ] **步骤 2：运行完整验证**
+
+```bash
+npm run test -- --reporter=dot
+npm run lint
+npm run build
+git diff --check
+```
+
+预期：全部命令退出码为 0。
+
+- [ ] **步骤 3：浏览器验证**
+
+启动 `npm run dev`，在浏览器分别检查浅色和深色下的页面背景、顶部栏、统计卡片、筛选控件、表格 hover、内部横向滚动、分页、创建弹窗和控制台。通过 `document.documentElement.scrollWidth === document.documentElement.clientWidth` 验证无全局横向溢出；若登录守卫阻止访问订单页，必须在本迭代“已知限制”中记录。
+
+- [ ] **步骤 4：提交文档与验证记录**
+
+```bash
+git add README.md ITERATIONS.md
+git commit -m "docs: record dual-theme visual baseline"
+```
+
 ## 2026-08-24：Naive UI 第一阶段迁移
 
 ### 状态
