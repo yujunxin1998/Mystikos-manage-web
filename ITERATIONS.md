@@ -6,7 +6,7 @@
 
 ### 状态
 
-设计已批准，待实施。
+第一阶段已完成，进入稳定观察。
 
 ### 目标
 
@@ -66,18 +66,18 @@
 
 - 修改 `package.json`、`package-lock.json`
 - 新建 `src/theme/naive.ts`
-- 新建 `src/theme/naive.test.ts`
+- 新建 `src/App.test.ts`
 - 修改 `src/App.vue`
 
-- [ ] 编写主题失败测试，断言 Mystikos 主色、圆角和中文配置可被根 Provider 使用：
+- [x] 编写主题失败测试，断言 Mystikos 主色通过根 Provider 提供给组件：
 
 ```ts
 expect(mystikosThemeOverrides.common?.primaryColor).toBe('#7257df')
 expect(mystikosThemeOverrides.common?.borderRadius).toBe('9px')
 ```
 
-- [ ] 运行 `npm run test -- src/theme/naive.test.ts --reporter=verbose`，确认因主题模块不存在而失败。
-- [ ] 使用 npm 安装 `naive-ui@^2.45.2`，建立以下主题接口，并在 `App.vue` 中接入 `NConfigProvider`、`NMessageProvider`、`zhCN`、`dateZhCN` 和 `darkTheme`：
+- [x] 运行 `npm run test -- src/App.test.ts --reporter=verbose`，确认 Provider 尚未覆盖主题时测试失败。
+- [x] 使用 npm 安装 `naive-ui@^2.45.2`，建立以下主题接口，并在 `App.vue` 中接入 `NConfigProvider`、`NDialogProvider`、`NMessageProvider`、`zhCN`、`dateZhCN` 和 `darkTheme`：
 
 ```ts
 export const mystikosThemeOverrides: GlobalThemeOverrides = {
@@ -89,7 +89,7 @@ export const mystikosThemeOverrides: GlobalThemeOverrides = {
   },
 }
 ```
-- [ ] 再次运行主题测试，并执行 `npm run build` 验证 Provider 类型与生产构建。
+- [x] 再次运行主题测试，并执行 `npm run build` 验证 Provider 类型与生产构建。
 
 #### 任务 2：订单页交互迁移
 
@@ -99,13 +99,12 @@ export const mystikosThemeOverrides: GlobalThemeOverrides = {
 - 新建 `src/composables/useCrudList.test.ts`
 - 重写 `src/views/orders/OrdersView.vue`
 - 新建 `src/views/orders/OrdersView.test.ts`
-- 新建 `src/styles/order.css`
-- 修改 `src/styles/index.css`
+- 修改 `src/styles/business.css`
 
-- [ ] 编写组合函数失败测试，传入 `notify(message)` 后执行刷新和删除，断言通知回调收到真实操作结果且列表状态同步更新。
-- [ ] 编写订单页失败测试，验证搜索输入、状态选择、创建按钮和 Naive UI 表格均可访问。
-- [ ] 运行两个定向测试，确认可选通知接口和新订单页尚不存在导致失败。
-- [ ] 为 `UseCrudListOptions` 增加可选通知接口，未传入时继续使用原 Pinia Toast：
+- [x] 编写组合函数失败测试，传入 `notify(message)` 后执行刷新和删除，断言通知回调收到真实操作结果且列表状态同步更新。
+- [x] 编写订单页失败测试，验证搜索输入、状态选择、创建按钮和 Naive UI 表格均可访问。
+- [x] 运行两个定向测试，确认可选通知接口和新订单页尚不存在导致失败。
+- [x] 为 `UseCrudListOptions` 增加可选通知接口，未传入时继续使用原 Pinia Toast：
 
 ```ts
 interface UseCrudListOptions<T extends RowRecord> {
@@ -118,7 +117,7 @@ interface UseCrudListOptions<T extends RowRecord> {
 const notify = options.notify ?? toast.notify
 ```
 
-- [ ] 在订单页使用 `NInput`、`NSelect`、`NButton`、`NDataTable`、`NPagination`、`NModal`、`NForm` 与 `useMessage`，并继续通过现有组合函数暴露以下交互：
+- [x] 在订单页使用 `NInput`、`NSelect`、`NButton`、`NDataTable`、`NPagination`、`NModal`、`NForm` 与 `useMessage`，并继续通过现有组合函数暴露以下交互：
 
 ```ts
 const list = useCrudList({
@@ -128,25 +127,25 @@ const list = useCrudList({
   notify: (message) => naiveMessage.info(message),
 })
 ```
-- [ ] 表格列使用固定宽度和 `scroll-x`，状态单元格继续渲染现有 `StatusTag`，操作列保持固定在右侧。
-- [ ] 运行定向测试，确认新订单页和组合函数测试通过。
+- [x] 表格列使用固定宽度和 `scroll-x`，状态单元格继续渲染现有 `StatusTag`，操作列保持固定在右侧。
+- [x] 运行定向测试，确认新订单页和组合函数测试通过。
 
 #### 任务 3：页面滚动边界
 
 **文件：**
 
 - 修改 `tests/layout.test.ts`
-- 修改 `src/styles/index.css`
+- 修改 `src/styles/business.css`
 
-- [ ] 扩展布局失败测试，应用真实样式后断言 `main`、`.business-page` 与订单表格宿主允许收缩，表格滚动容器使用局部横向滚动：
+- [x] 扩展布局失败测试，应用真实样式后断言 `main`、`.business-page` 与订单表格宿主允许收缩，表格滚动容器使用局部横向滚动：
 
 ```ts
 expect(getComputedStyle(main).minWidth).toBe('0px')
 expect(getComputedStyle(tableHost).overflowX).toBe('auto')
 ```
 
-- [ ] 运行 `npm run test -- tests/layout.test.ts --reporter=verbose`，确认缺失的内容区宽度约束导致失败。
-- [ ] 增加以下宽度与滚动边界，不使用 document 级 `overflow-x: hidden` 掩盖溢出：
+- [x] 运行 `npm run test -- tests/layout.test.ts --reporter=verbose`，确认缺失的内容区宽度约束导致失败。
+- [x] 增加以下宽度与滚动边界，不使用 document 级 `overflow-x: hidden` 掩盖溢出：
 
 ```css
 main,
@@ -160,7 +159,7 @@ main,
   overflow-x: auto;
 }
 ```
-- [ ] 再次运行布局测试，确认计算样式满足收缩与局部滚动契约。
+- [x] 再次运行布局测试，确认计算样式满足收缩与局部滚动契约。
 
 #### 任务 4：文档与完整验证
 
@@ -169,15 +168,36 @@ main,
 - 修改 `README.md`
 - 修改 `ITERATIONS.md`
 
-- [ ] 更新 README 的技术栈、依赖、项目结构、订单交互、数据边界和变更记录。
-- [ ] 将本迭代状态改为“第一阶段已完成”，填写实际变更、验证结果、已知限制和下一阶段迁移条件。
-- [ ] 运行 `npm run test -- --reporter=dot`、`npm run lint`、`npm run build` 和 `git diff --check`。
-- [ ] 启动或复用开发服务器，在浏览器检查订单页筛选、表格 hover/滚动、分页、弹窗、深浅主题和控制台；若认证阻止访问，明确记录受限项而不虚报。
+- [x] 更新 README 的技术栈、依赖、项目结构、订单交互、数据边界和变更记录。
+- [x] 将本迭代状态改为“第一阶段已完成”，填写实际变更、验证结果、已知限制和下一阶段迁移条件。
+- [x] 运行 `npm run test -- --reporter=dot`、`npm run lint`、`npm run build` 和 `git diff --check`。
+- [x] 启动开发服务器并执行浏览器检查；订单页受真实登录守卫阻止，已按实际情况记录受限项。
 
 ### 实际变更与验证结果
 
-待实施完成后补充。
+#### 实际变更
+
+- 新增 Naive UI 依赖，在根组件接入中文语言、日期语言、深浅主题、对话框和消息上下文，并建立 Mystikos 紫色主题覆盖。
+- 订单管理页改用 Naive UI 的输入、选择、按钮、数据表格、分页、弹窗、表单、删除确认和消息组件；统计卡片、状态标签与 Lucide 图标继续复用现有实现。
+- `useCrudList` 增加可选通知回调，订单页使用 Naive UI 消息，未迁移页面继续使用原 Pinia Toast。
+- 主内容、业务页面、订单面板与表格宿主增加可收缩宽度约束，固定宽度列通过订单表格内部滚动展示。
+- 新增根级主题、订单关键词筛选与创建弹窗、通知边界和局部滚动回归测试。
+
+#### 验证结果
+
+- `npm run test -- --reporter=dot`：14 个测试文件、29 项测试全部通过。
+- `npm run lint`：通过。
+- `npm run build`：通过，TypeScript 类型检查及 Vite 生产构建完成。
+- `git diff --check`：通过。
+- 开发服务器可正常启动；浏览器访问 `/orders` 时按真实路由守卫跳转到 `/login?redirect=/orders`，登录页控制台无错误或警告，页面 `scrollWidth` 与 `clientWidth` 均为 1280。
+
+#### 已知限制
+
+- 当前浏览器会话没有管理员登录态，因此未在真实路由页面中完成订单表格 hover、弹窗和深浅主题的人工视觉检查；对应组件交互与滚动边界已由 Vitest 覆盖，不能替代后续带登录态的稳定观察。
+- 订单数据仍为本地 Mock，分页、新增、编辑和删除均不持久化，也未接入服务端状态流转。
+- Naive UI 目前只用于根级 Provider 和订单页，其他模块暂时保留原组件，避免一次性迁移扩大回归范围。
+- 安装依赖时 npm audit 报告 1 个高危依赖项，本迭代未自动修改依赖树，需要另行评估处理。
 
 ### 后续计划
 
-第一阶段稳定后，再按用户管理、陪玩师管理、身份申请审核、其余本地 Mock 模块的顺序评估和实施迁移。
+先观察订单页在真实登录态、不同视口和深浅主题下的滚动与交互稳定性。稳定后，再结合组件复用度和包体积评估抽取项目级封装，并按用户管理、陪玩师管理、身份申请审核、其余本地 Mock 模块的顺序分批迁移。

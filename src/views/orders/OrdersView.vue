@@ -211,7 +211,7 @@ function updateFormField(key: string, value: string | null) {
       </div>
     </section>
 
-    <NModal v-model:show="modal">
+    <NModal v-model:show="modal" :mask-closable="false">
       <NCard
         class="order-form-modal"
         :title="editingKey ? '编辑订单' : orderMeta.action"
