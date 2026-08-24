@@ -4,3 +4,8 @@
 @import './interaction.css';
 @import './login.css';
 @import './typography.css';
+
+/* 页面壳层跟随视口收缩，宽表格继续由各自容器处理横向滚动。 */
+.app {
+  min-width: 0;
+}
