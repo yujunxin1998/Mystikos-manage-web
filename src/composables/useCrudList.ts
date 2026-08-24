@@ -13,10 +13,12 @@ interface UseCrudListOptions<T extends RowRecord> {
   meta: ModuleMeta
   source: T[]
   filenamePrefix: string
+  notify?: (message: string) => void
 }
 
 export function useCrudList<T extends RowRecord>(options: UseCrudListOptions<T>) {
   const toast = useToastStore()
+  const notify = options.notify ?? toast.notify
   const keyword = ref('')
   const statusFilter = ref('全部状态')
   const modal = ref(false)
@@ -47,7 +49,7 @@ export function useCrudList<T extends RowRecord>(options: UseCrudListOptions<T>)
     localRows.value = [...options.source] as T[]
     keyword.value = ''
     statusFilter.value = '全部状态'
-    toast.notify('数据已刷新')
+    notify('数据已刷新')
   }
 
   function openCreate() {
@@ -64,14 +66,14 @@ export function useCrudList<T extends RowRecord>(options: UseCrudListOptions<T>)
 
   function removeRow(row: T) {
     localRows.value = localRows.value.filter((item) => recordKey(item) !== recordKey(row))
-    toast.notify('记录已删除')
+    notify('记录已删除')
   }
 
   function submit() {
     try {
       const firstEditable = options.meta.fields.find((field) => field.key !== 'image')
       if (firstEditable && !form.value[firstEditable.key]) {
-        toast.notify('请填写必要信息')
+        notify('请填写必要信息')
         return
       }
       if (editingKey.value) {
@@ -82,10 +84,10 @@ export function useCrudList<T extends RowRecord>(options: UseCrudListOptions<T>)
         localRows.value.unshift({ ...form.value } as T)
       }
       modal.value = false
-      toast.notify(editingKey.value ? '修改已保存' : `${options.meta.action}成功`)
+      notify(editingKey.value ? '修改已保存' : `${options.meta.action}成功`)
     } catch (error) {
       console.error('提交失败', error)
-      toast.notify('提交失败，请重试')
+      notify('提交失败，请重试')
     }
   }
 
@@ -96,9 +98,9 @@ export function useCrudList<T extends RowRecord>(options: UseCrudListOptions<T>)
         options.meta.columns as ColumnDef[],
         rows.value,
       )
-      toast.notify('报表已导出')
+      notify('报表已导出')
     } catch {
-      toast.notify('导出失败，请重试')
+      notify('导出失败，请重试')
     }
   }
 
