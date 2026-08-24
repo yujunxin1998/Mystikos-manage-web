@@ -1,0 +1,351 @@
+# Mystikos Admin
+
+Mystikos Admin 是 Mystikos 项目的运营管理后台前端，面向会员、订单、陪玩师、财务和经营数据等业务场景。
+
+项目采用 Vue 3、TypeScript 和 Vite 构建，界面与业务结构参考了 [Guyungy/Kuangniao](https://github.com/Guyungy/Kuangniao)，并重新设计为更轻量、统一的现代化管理后台。
+
+> 当前版本已接入 Mystikos Server API 的登录认证与用户管理模块；工作台、订单、陪玩师、商品、财务、报表和系统设置仍使用本地模拟数据，其增删改、筛选和导出仅在浏览器端完成。
+
+## 当前状态
+
+| 项目 | 状态 |
+| --- | --- |
+| 工作台 | 已完成前端原型 |
+| 用户管理 | 已接入服务端分页、查询、新增、删除、封禁、角色与权限接口 |
+| 订单、陪玩师管理 | 已完成列表和本地交互 |
+| 商品管理 | 已与前台商城商品字段对齐 |
+| 财务、报表、系统设置 | 已完成列表和本地交互 |
+| 深浅主题与响应式布局 | 已完成 |
+| 独立路由 | 已接入 Vue Router |
+| Pinia 全局状态 | 已接入（主题、侧边栏、提示） |
+| Axios 与环境变量 | 已接入统一响应、Bearer Token 与 Token 刷新 |
+| ESLint / Prettier / 测试 | 已配置基础能力 |
+| 后端接口与持久化 | 登录、退出和用户管理已接入，其余模块待接入 |
+| 登录与权限控制 | 真实登录、路由守卫和用户角色/权限查询已完成 |
+
+## 界面预览
+
+![Mystikos Admin 工作台](./dashboard-preview.jpg)
+
+## 已实现功能
+
+- 运营工作台和经营数据概览
+- 今日营收、进行中订单、新增会员和在线陪玩师统计
+- 近 7 天、近 30 天营收趋势切换
+- 今日订单状态分布与完成率展示
+- 最新订单列表与关键字筛选
+- 创建订单表单弹窗
+- 手机号/邮箱密码登录、Token 刷新、路由守卫与服务端退出
+- 用户、订单、陪玩师、商品、财务、报表、系统设置独立路由页面
+- 用户管理服务端分页、关键词/状态查询、新增、删除、封禁、角色分配/移除和权限查看
+- 通用列表交互：新增、编辑、删除、关键词搜索、状态筛选、刷新和 CSV 导出
+- 侧边栏展开与收起（写入本地存储）
+- 深色与浅色主题切换（写入本地存储）
+- 桌面端和移动端响应式布局
+
+## 技术栈
+
+| 技术 | 用途 |
+| --- | --- |
+| Vue 3 | 前端视图与交互 |
+| TypeScript | 类型检查与开发约束 |
+| Vite | 开发服务器与生产构建 |
+| Vue Router | 路由与页面拆分 |
+| Pinia | 全局状态管理 |
+| Axios | HTTP 请求封装 |
+| Lucide Vue Next | 页面图标 |
+| ESLint / Prettier | 代码规范与格式化 |
+| Vitest | 单元测试 |
+| CSS | 页面布局、主题与响应式样式 |
+
+### 字体策略
+
+系统不依赖在线中文字体，按照以下顺序使用本机字体：
+
+```text
+HarmonyOS Sans SC → MiSans → PingFang SC → Microsoft YaHei UI
+```
+
+数字、金额和统计数据启用等宽数字特性，减少表格及指标变化时的视觉跳动。字体规则集中维护在 `src/styles/typography.css`。
+
+## 环境要求
+
+- Node.js 20.19 或更高版本，推荐使用 Node.js 22 LTS
+- npm 9 或更高版本
+
+可以通过以下命令检查本机环境：
+
+```bash
+node --version
+npm --version
+```
+
+## 快速开始
+
+进入前端目录：
+
+```powershell
+cd D:\MyDevelop\Mystikos\web\Admin
+```
+
+安装依赖：
+
+```bash
+npm install
+```
+
+复制环境变量示例（可选）：
+
+```bash
+copy .env.example .env.development
+```
+
+启动开发服务器：
+
+```bash
+npm run dev
+```
+
+默认访问地址：
+
+```text
+http://localhost:5173
+```
+
+开发服务器支持热更新，修改 `src` 目录中的代码后页面会自动刷新。
+
+## 构建与预览
+
+执行 TypeScript 类型检查并生成生产文件：
+
+```bash
+npm run build
+```
+
+构建产物会生成在 `dist` 目录中。
+
+在本地预览生产构建：
+
+```bash
+npm run preview
+```
+
+## npm 命令
+
+| 命令 | 说明 |
+| --- | --- |
+| `npm run dev` | 启动 Vite 开发服务器 |
+| `npm run build` | 执行类型检查并构建生产版本 |
+| `npm run preview` | 在本地预览生产构建 |
+| `npm run lint` | 运行 ESLint 检查 |
+| `npm run format` | 使用 Prettier 格式化代码 |
+| `npm run format:check` | 检查代码格式 |
+| `npm run test` | 运行 Vitest 单元测试 |
+| `npm run test:watch` | 监听模式运行测试 |
+
+## 环境变量
+
+| 变量 | 说明 | 开发默认值 |
+| --- | --- | --- |
+| `VITE_API_BASE_URL` | 浏览器请求基础地址；留空时使用同域 `/api/v1` | 空 |
+| `VITE_API_PROXY_TARGET` | Vite 开发代理目标地址 | `http://116.62.218.227:8099` |
+| `VITE_APP_TITLE` | 浏览器标题前缀 | `Mystikos 运营中心` |
+
+在代码中读取：
+
+```ts
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+```
+
+## 项目结构
+
+```text
+Admin/
+├── src/
+│   ├── api/                 # Axios 实例与接口封装
+│   ├── components/          # 通用组件（表格、统计卡片、状态标签、表单弹窗）
+│   ├── composables/         # 组合式函数（列表 CRUD）
+│   ├── layouts/             # 后台布局与导航
+│   ├── mocks/               # 各模块模拟数据
+│   ├── router/              # Vue Router 路由
+│   ├── stores/              # Pinia 状态（主题、侧边栏、提示）
+│   ├── styles/              # 样式体系（布局、业务、交互、字体）
+│   ├── types/               # TypeScript 业务类型
+│   ├── utils/               # 通用工具（筛选、导出）
+│   ├── views/               # 各业务模块页面
+│   │   ├── dashboard/
+│   │   ├── members/
+│   │   ├── orders/
+│   │   ├── workers/
+│   │   ├── products/
+│   │   ├── finance/
+│   │   ├── reports/
+│   │   └── settings/
+│   ├── App.vue
+│   └── main.ts
+├── .env.development
+├── .env.production
+├── .env.example
+├── eslint.config.js
+├── dashboard-preview.jpg
+├── index.html
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
+
+## 路由说明
+
+| 路径 | 页面 |
+| --- | --- |
+| `/login` | 登录 |
+| `/` | 工作台 |
+| `/members` | 用户管理 |
+| `/orders` | 订单管理 |
+| `/workers` | 陪玩师管理 |
+| `/products` | 商品管理 |
+| `/finance` | 财务中心 |
+| `/reports` | 数据报表 |
+| `/settings` | 系统设置 |
+
+## 当前页面交互
+
+### 订单搜索
+
+在工作台“最新订单”区域输入订单编号、会员昵称、游戏名称、服务内容或陪玩师名称，可以即时筛选表格数据。
+
+### 创建订单
+
+点击页面右上方的“创建订单”按钮可以打开表单弹窗。目前提交操作仅关闭弹窗，不会保存数据或发送网络请求。
+
+### 用户管理
+
+用户管理页面的数据来自 Mystikos Server API，支持服务端分页、昵称/手机号/邮箱关键词搜索、账号状态筛选、新增用户、封禁、删除、角色分配与移除，以及查看服务端解析后的权限编码。删除和封禁操作需要二次确认；新增用户时手机号与邮箱至少填写一项。
+
+### 其他业务列表
+
+订单、陪玩师、商品、财务、报表和系统设置页面支持以下本地模拟操作：
+
+- 输入关键词实时筛选当前列表
+- 根据状态筛选记录
+- 新增记录并即时插入表格
+- 编辑现有记录并即时更新表格
+- 删除记录
+- 刷新并恢复该模块的初始演示数据
+- 将当前筛选结果导出为带 UTF-8 BOM 的 CSV 文件
+
+上述操作目前仅修改浏览器内存中的数据。刷新页面或重新进入模块后会恢复初始模拟数据。
+
+### 商品管理
+
+商品字段与 `D:\MyDevelop\Mystikos\web\Mystikos-web` 的奇物商店保持对应：
+
+| 前台字段 | 含义 |
+| --- | --- |
+| `id` | 商品唯一编码 |
+| `name` | 英文商品名称 |
+| `category` | 商品分类 |
+| `price` | 展示价格 |
+| `image` | 商品图片地址 |
+| `companion` | 推荐该商品的陪玩 |
+
+管理后台在此基础上增加了 `stock` 和 `status`，用于库存及上下架管理。
+
+## 登录说明
+
+访问任意后台页面时，若未登录会自动跳转到 `/login`。
+
+登录页调用 `POST /api/v1/auth/login`，支持手机号或邮箱配合密码登录。登录成功后，Access Token、Refresh Token 和用户信息会写入浏览器 `localStorage` 或 `sessionStorage`（取决于是否勾选“记住登录状态”）。Access Token 失效时会调用 `POST /api/v1/auth/refresh-token` 刷新；刷新失败则清除登录状态并返回登录页。顶部头像菜单调用服务端退出接口并清除本地状态。
+
+管理员账号由 Mystikos Server 后端创建和维护，项目不再内置演示账号。
+
+### 主题与侧边栏
+
+点击顶部月亮或太阳图标可以切换深色与浅色主题；点击侧边栏圆形按钮可收起导航。偏好会写入 `localStorage`，刷新后保持。
+
+## 后端 API 接入建议
+
+Axios 实例位于 `src/api/http.ts`，已配置：
+
+- 从 `VITE_API_BASE_URL` 读取基础地址
+- 请求拦截器附加 `Authorization: Bearer <accessToken>`
+- 401 响应自动使用 Refresh Token 刷新并重试一次
+- `code/message/data` 统一响应结构由业务 API 解包
+
+用户管理接口封装位于 `src/api/users.ts`，已接入 `/api/v1/manage/users` 下的分页查询、新增、删除、封禁、角色分配/移除和权限查询。页面使用服务端分页，不会把接口数据写入浏览器持久化存储。开发环境通过 Vite 将同域 `/api` 请求代理至 `VITE_API_PROXY_TARGET`，避免浏览器跨域预检被后端拒绝；生产部署也需要把同域 `/api` 反向代理到 Mystikos Server。
+
+后续可将各模块 `mocks/` 数据替换为 `src/api/` 下的真实接口调用，并在 Pinia store 中管理服务端状态。
+
+## 后续开发计划
+
+- [x] 接入真实登录、Token 刷新、服务端退出与路由守卫
+- [x] 引入 Vue Router 并拆分业务页面
+- [x] 引入 Pinia 管理全局状态
+- [x] 封装 Axios 请求和错误处理
+- [x] 接入用户管理 API
+- [ ] 接入订单、陪玩师和财务 API
+- [ ] 完善订单创建、编辑、取消和状态流转
+- [x] 增加关键词搜索、状态筛选和 CSV 导出
+- [ ] 接入服务端分页和批量操作
+- [x] 保存主题与侧边栏设置
+- [x] 增加 ESLint、Prettier 和自动化测试
+
+## 文档维护约定
+
+项目开发时必须同步维护 Markdown 文档，避免实现与说明脱节。
+
+以下变更需要同步更新 `README.md`：
+
+- 新增、删除或调整业务模块
+- 修改页面交互、数据字段或状态流转
+- 增加或移除 npm 依赖与运行命令
+- 调整项目目录结构
+- 修改环境变量、接口地址或部署方式
+- 改变浏览器兼容范围或运行环境要求
+- 完成或调整后续开发计划
+
+提交功能前至少检查：已实现功能、项目结构、交互说明、后续计划和变更记录是否仍与代码一致。
+
+## 变更记录
+
+### 2026-08-24（真实登录与用户管理）
+
+- 登录页改为调用 Mystikos Server API，支持手机号/邮箱密码登录、Access/Refresh Token 持久化与服务端退出
+- Axios 增加统一业务响应解包、Bearer Token 和 401 自动刷新重试
+- `/members` 改为用户管理，接入服务端分页、搜索、状态筛选、新增、删除、封禁、角色管理和权限查看
+- 开发环境通过 Vite 同域代理连接 `http://116.62.218.227:8099`，生产环境要求配置同域 `/api` 反向代理
+- 增加认证、统一响应和用户 API 契约测试
+
+### 2026-08-24（登录页）
+
+- 新增 `/login` 登录页面，接入 Pinia 认证状态与路由守卫
+- 支持演示账号登录、记住登录状态、退出登录
+- 顶部用户信息改为读取登录态
+
+### 2026-08-24（字体修复）
+
+- 修正样式加载顺序，避免布局样式覆盖中文字体栈，恢复 HarmonyOS Sans SC → MiSans → PingFang SC → Microsoft YaHei UI
+
+### 2026-08-24（架构重整）
+
+- 接入 Vue Router，拆分工作台与各业务模块独立页面
+- 抽取 `AdminLayout` 后台布局与侧边栏导航
+- 为各模块建立独立 `types/`、`mocks/` 与表单字段定义
+- 抽取 `StatCards`、`StatusTag`、`DataTable`、`RecordFormModal` 通用组件
+- 接入 Pinia（主题、侧边栏、操作提示）与 Axios 环境变量封装
+- 重整样式目录为 `src/styles/`
+- 增加 ESLint、Prettier、Vitest 与基础单元测试
+
+### 2026-08-24
+
+- 初始化 Vue 3、TypeScript 和 Vite 管理后台
+- 完成运营工作台、经营指标、趋势图和订单概览
+- 增加会员、订单、陪玩师、财务、报表及系统设置页面
+- 参考前台奇物商店增加商品管理模块
+- 为业务列表增加新增、编辑、删除、搜索、状态筛选、刷新和 CSV 导出
+- 调整中文字体方案及数字、金额的排版层级
+- 完善项目开发、API 接入和文档维护说明
+
+## 说明
+
+参考项目提供了后台系统的业务导航与功能思路。本项目当前代码和视觉样式针对 Mystikos 重新实现，未直接依赖参考项目的后端服务。
