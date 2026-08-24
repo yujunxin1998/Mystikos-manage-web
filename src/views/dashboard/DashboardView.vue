@@ -47,12 +47,7 @@ const statTones = ['violet', 'orange', 'blue', 'green']
       </button>
     </section>
 
-    <StatCards
-      :items="dashboardStats"
-      :icons="statIcons"
-      :tones="statTones"
-      variant="dashboard"
-    />
+    <StatCards :items="dashboardStats" :icons="statIcons" :tones="statTones" variant="dashboard" />
 
     <section class="content-grid">
       <article class="panel revenue">
@@ -72,7 +67,9 @@ const statTones = ['violet', 'orange', 'blue', 'green']
         </div>
         <div class="chart-total"><strong>¥ 68,420</strong><span>+14.6% 较上期</span></div>
         <div class="chart">
-          <div class="y-axis"><span>20k</span><span>15k</span><span>10k</span><span>5k</span><span>0</span></div>
+          <div class="y-axis">
+            <span>20k</span><span>15k</span><span>10k</span><span>5k</span><span>0</span>
+          </div>
           <svg viewBox="0 0 540 170" preserveAspectRatio="none">
             <defs>
               <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
@@ -84,7 +81,8 @@ const statTones = ['violet', 'orange', 'blue', 'green']
             <path :d="chart" fill="none" stroke="#7c5cfc" stroke-width="3" stroke-linecap="round" />
           </svg>
           <div class="x-axis">
-            <span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span>
+            <span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span
+            ><span>周六</span><span>周日</span>
           </div>
         </div>
       </article>
@@ -149,10 +147,14 @@ const statTones = ['violet', 'orange', 'blue', 'green']
               <td class="order-id">{{ order.id }}</td>
               <td>
                 <div class="member">
-                  <span>{{ order.user.slice(0, 1) }}</span>{{ order.user }}
+                  <span>{{ order.user.slice(0, 1) }}</span
+                  >{{ order.user }}
                 </div>
               </td>
-              <td><b>{{ order.game }}</b><small>{{ order.service }}</small></td>
+              <td>
+                <b>{{ order.game }}</b
+                ><small>{{ order.service }}</small>
+              </td>
               <td>{{ order.worker }}</td>
               <td class="amount">{{ order.amount }}</td>
               <td><StatusTag :status="order.status" variant="table" /></td>
@@ -164,14 +166,16 @@ const statTones = ['violet', 'orange', 'blue', 'green']
       </div>
     </section>
 
-    <div v-if="showOrder" class="modal-backdrop" @click.self="showOrder = false">
+    <div v-if="showOrder" class="modal-backdrop">
       <div class="modal">
         <div class="modal-head">
           <div>
             <h2>创建新订单</h2>
             <p>录入会员的陪玩服务需求</p>
           </div>
-          <button type="button" class="icon-btn" @click="showOrder = false"><X :size="19" /></button>
+          <button type="button" class="icon-btn" @click="showOrder = false">
+            <X :size="19" />
+          </button>
         </div>
         <div class="form">
           <label><span>选择会员</span><input placeholder="输入昵称或手机号搜索" /></label>
@@ -195,7 +199,9 @@ const statTones = ['violet', 'orange', 'blue', 'green']
               </select>
             </label>
           </div>
-          <label><span>服务备注</span><textarea placeholder="填写段位、局数或其他需求"></textarea></label>
+          <label
+            ><span>服务备注</span><textarea placeholder="填写段位、局数或其他需求"></textarea>
+          </label>
         </div>
         <div class="modal-foot">
           <button type="button" class="secondary" @click="showOrder = false">取消</button>

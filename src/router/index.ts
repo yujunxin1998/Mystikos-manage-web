@@ -39,6 +39,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '陪玩师管理', requiresAuth: true },
       },
       {
+        path: 'companion-applications',
+        name: 'companion-applications',
+        component: () => import('../views/companion-applications/CompanionApplicationsView.vue'),
+        meta: { title: '身份申请审核', requiresAuth: true },
+      },
+      {
         path: 'products',
         name: 'products',
         component: () => import('../views/products/ProductsView.vue'),

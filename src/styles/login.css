@@ -238,4 +238,85 @@
     align-items: flex-start;
   }
 }
-.login-channel{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;background:var(--hover);border-radius:10px;margin-bottom:18px}.login-channel button{height:34px;border:0;border-radius:7px;background:transparent;color:var(--muted);cursor:pointer}.login-channel button.active{background:var(--card);color:var(--text);box-shadow:0 2px 8px #00000012}
+.login-channel {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 5px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(15, 20, 32, 0.52);
+}
+
+.login-channel-indicator {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 16px) / 2);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #8265ed, #6849db);
+  box-shadow: 0 5px 16px rgba(82, 54, 190, 0.36);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.login-channel.is-email .login-channel-indicator {
+  transform: translateX(calc(100% + 6px));
+}
+
+.login-channel button {
+  position: relative;
+  z-index: 1;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #909aac;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease, text-shadow 180ms ease;
+}
+
+.login-channel button:hover:not(.active) {
+  color: #c8cfda;
+}
+
+.login-channel button.active {
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(255, 255, 255, 0.2);
+}
+
+.login-channel button:focus-visible {
+  outline: 2px solid #b7a7ff;
+  outline-offset: -3px;
+}
+
+.login-account {
+  animation: login-account-in 180ms ease-out;
+}
+
+@keyframes login-account-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-channel-indicator {
+    transition: none;
+  }
+
+  .login-account {
+    animation: none;
+  }
+}

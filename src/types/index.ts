@@ -1,6 +1,14 @@
 export type { RowRecord, ColumnDef, StatItem, FormField, ModuleMeta } from './common'
 export type { Order, DashboardOrder } from './order'
-export type { Worker } from './worker'
+export type {
+  Companion,
+  CompanionPerformance,
+  CompanionQuery,
+  CompanionStats,
+  CompanionStatus,
+  CreateCompanionRequest,
+  TagView,
+} from './worker'
 export type { Product } from './product'
 export type { FinanceRecord } from './finance'
 export type { ReportRank } from './report'
@@ -16,3 +24,10 @@ export type {
   UserRole,
 } from './auth'
 export type { CreateUserRequest, UserProfile, UserQuery, UserStatus } from './user'
+export type {
+  CompanionApplicationQuery,
+  CompanionApplicationStatus,
+  CompanionIdentityApplication,
+  CompanionReviewResult,
+  ReviewCompanionApplicationRequest,
+} from './companion-application'

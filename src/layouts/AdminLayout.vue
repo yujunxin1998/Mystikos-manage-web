@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
   FileBarChart,
   Gamepad2,
   Headphones,
@@ -40,6 +41,7 @@ const nav = [
   { label: '用户管理', path: '/members', icon: UsersRound },
   { label: '订单管理', path: '/orders', icon: Gamepad2, badge: '12' },
   { label: '陪玩师管理', path: '/workers', icon: Headphones },
+  { label: '身份申请审核', path: '/companion-applications', icon: ClipboardCheck },
   { label: '商品管理', path: '/products', icon: ShoppingBag, badge: '6' },
   { label: '财务中心', path: '/finance', icon: Wallet },
   { label: '数据报表', path: '/reports', icon: FileBarChart },
@@ -139,7 +141,9 @@ onBeforeUnmount(() => {
     <main>
       <header>
         <button type="button" class="icon-btn mobile-menu"><Menu :size="20" /></button>
-        <div class="crumb"><span>运营中心</span><i>/</i><b>{{ pageTitle }}</b></div>
+        <div class="crumb">
+          <span>运营中心</span><i>/</i><b>{{ pageTitle }}</b>
+        </div>
         <div class="header-actions">
           <label class="global-search">
             <Search :size="17" />
@@ -161,9 +165,7 @@ onBeforeUnmount(() => {
               <ChevronDown :size="15" />
             </button>
             <div v-if="profileOpen" class="profile-menu">
-              <button type="button" @click="handleLogout">
-                <LogOut :size="15" />退出登录
-              </button>
+              <button type="button" @click="handleLogout"><LogOut :size="15" />退出登录</button>
             </div>
           </div>
         </div>

@@ -1,1 +1,141 @@
 :root{font-family:'HarmonyOS Sans SC','MiSans','PingFang SC','Microsoft YaHei UI','Microsoft YaHei',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;letter-spacing:.005em}body,button,input,select,textarea{font-family:inherit}.brand{font-family:'Segoe UI',Arial,sans-serif;font-weight:700;letter-spacing:1.5px}.welcome h1,.business-title h1{font-weight:700;letter-spacing:-.035em}.panel h2,.business-table-head h2{font-weight:650;letter-spacing:-.012em}.stat-value strong,.business-stats strong,.chart-total strong,.donut strong,.amount{font-family:'Segoe UI Variable Display','Segoe UI',Arial,sans-serif;font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:-.025em}table{font-variant-numeric:tabular-nums}th{font-weight:500;letter-spacing:.01em}td{font-weight:400}.sidebar nav button{font-weight:500}.profile b{font-weight:600}.primary{font-weight:600}.business-title>div>span,.panel-head p,.business-table-head p,.welcome>div>p{line-height:1.6}
+
+/* 全局可读性字号层级 */
+body {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+body select,
+body select option {
+  font-size: 14px;
+}
+
+body select {
+  min-height: 40px;
+}
+
+.workspace,
+.crumb,
+.sidebar nav button,
+.primary,
+.secondary,
+.filter,
+.outline-action,
+.business-filters button,
+.switch button,
+.text-btn,
+.profile-menu button {
+  font-size: 13px;
+}
+
+.nav-title,
+.support small,
+.profile small,
+.profile b,
+.eyebrow,
+.stat-card > p,
+.stat-value span,
+.panel-head p,
+.business-title p,
+.business-title span,
+.business-stats p,
+.business-stats small,
+.business-table-head p,
+.business-status,
+.status,
+.pagination,
+.completion,
+.insight-strip span,
+.insight-strip small,
+.form > label,
+.form-row label,
+.business-form > label,
+.business-form .form-row label,
+.modal-head p,
+.login-brand p,
+.login-form > label,
+.login-remember,
+.login-hint,
+.login-error,
+.login-foot {
+  font-size: 12px;
+}
+
+.support b,
+.global-search input,
+.table-actions input,
+.business-filters input,
+.form input,
+.form select,
+.form textarea,
+.business-form input,
+.business-form select,
+.business-form textarea,
+.login-head p {
+  font-size: 13px;
+}
+
+table,
+.login-field input,
+.login-channel button,
+.login-submit {
+  font-size: 14px;
+}
+
+.panel h2,
+.business-table-head h2 {
+  font-size: 16px;
+}
+
+.welcome h1,
+.business-title h1 {
+  font-size: 28px;
+}
+
+.stat-value strong {
+  font-size: 25px;
+}
+
+.business-stats strong,
+.chart-total strong {
+  font-size: 22px;
+}
+
+.sidebar nav button {
+  height: 46px;
+}
+
+.global-search,
+.table-actions label {
+  height: 40px;
+}
+
+.business-filters label,
+.business-filters button,
+.business-filters select,
+.filter {
+  min-height: 40px;
+}
+
+.form input,
+.form select,
+.business-form input,
+.business-form select {
+  min-height: 40px;
+}
+
+th {
+  height: 40px;
+}
+
+td {
+  height: 60px;
+}
+
+@media (max-width: 800px) {
+  .welcome h1,
+  .business-title h1 {
+    font-size: 24px;
+  }
+}

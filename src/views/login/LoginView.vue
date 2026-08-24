@@ -70,11 +70,31 @@ async function handleSubmit() {
       </div>
 
       <form class="login-form" @submit.prevent="handleSubmit">
-        <div class="login-channel" role="group" aria-label="登录方式">
-          <button type="button" :class="{ active: form.channel === 'PHONE' }" @click="form.channel = 'PHONE'">手机号</button>
-          <button type="button" :class="{ active: form.channel === 'EMAIL' }" @click="form.channel = 'EMAIL'">邮箱</button>
+        <div
+          class="login-channel"
+          :class="{ 'is-email': form.channel === 'EMAIL' }"
+          role="group"
+          aria-label="登录方式"
+        >
+          <span class="login-channel-indicator" aria-hidden="true"></span>
+          <button
+            type="button"
+            :class="{ active: form.channel === 'PHONE' }"
+            :aria-pressed="form.channel === 'PHONE'"
+            @click="form.channel = 'PHONE'"
+          >
+            手机号
+          </button>
+          <button
+            type="button"
+            :class="{ active: form.channel === 'EMAIL' }"
+            :aria-pressed="form.channel === 'EMAIL'"
+            @click="form.channel = 'EMAIL'"
+          >
+            邮箱
+          </button>
         </div>
-        <label>
+        <label :key="form.channel" class="login-account">
           <span>{{ form.channel === 'PHONE' ? '手机号' : '邮箱' }}</span>
           <div class="login-field">
             <UserRound :size="17" />
