@@ -4,7 +4,7 @@ export const dashboardStats: StatItem[] = [
   { label: '今日营收', value: '¥ 12,680', hint: '+18.2%' },
   { label: '进行中订单', value: '36', hint: '+8.4%' },
   { label: '新增会员', value: '28', hint: '+12.5%' },
-  { label: '在线陪玩师', value: '64', hint: '在线率 82%' },
+  { label: '陪玩数量', value: '64', hint: '新增陪玩 6' },
 ]
 
 export const chartPaths = {

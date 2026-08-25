@@ -138,4 +138,43 @@ describe('companions api', () => {
       comment: '资料与线下考核均通过',
     })
   })
+
+  it('分页查询陪玩名片列表', async () => {
+    const { fetchCompanionShowcases } = companionApi
+    vi.mocked(http.get).mockResolvedValue({
+      data: {
+        code: 200,
+        message: 'ok',
+        data: { records: [], total: 0, pageNum: 1, pageSize: 10, pages: 0 },
+      },
+    })
+
+    await fetchCompanionShowcases({
+      pageNum: 1,
+      pageSize: 10,
+      status: 'PENDING_REVIEW',
+      keyword: '浅眠',
+    })
+
+    expect(http.get).toHaveBeenCalledWith('/api/v1/manage/companion-showcases', {
+      params: {
+        pageNum: 1,
+        pageSize: 10,
+        status: 'PENDING_REVIEW',
+        keyword: '浅眠',
+      },
+    })
+  })
+
+  it('录入名片审核结果', async () => {
+    const { reviewCompanionShowcase } = companionApi
+    vi.mocked(http.put).mockResolvedValue({ data: { code: 200, message: 'ok', data: null } })
+
+    await reviewCompanionShowcase(18, { approved: false, comment: '封面不清晰' })
+
+    expect(http.put).toHaveBeenCalledWith('/api/v1/manage/companion-showcases/18/review', {
+      approved: false,
+      comment: '封面不清晰',
+    })
+  })
 })

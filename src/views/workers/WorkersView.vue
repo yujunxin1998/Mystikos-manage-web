@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import {
-  CircleDollarSign,
   Plus,
   RefreshCcw,
   Search,
   Trash2,
-  UserCheck,
   UsersRound,
 } from 'lucide-vue-next'
 import {
@@ -66,18 +64,18 @@ let searchTimer: ReturnType<typeof setTimeout> | undefined
 
 const statusLabels: Record<CompanionStatus, string> = {
   AVAILABLE: '在线',
-  BUSY: '服务中',
+  BUSY: '接单中',
   OFFLINE: '离线',
 }
 const statusSelectOptions = [
   { label: '全部状态', value: '' },
   { label: '在线', value: 'AVAILABLE' },
-  { label: '服务中', value: 'BUSY' },
+  { label: '接单中', value: 'BUSY' },
   { label: '离线', value: 'OFFLINE' },
 ]
 const companionStatusOptions = [
   { label: '在线', value: 'AVAILABLE' },
-  { label: '服务中', value: 'BUSY' },
+  { label: '接单中', value: 'BUSY' },
   { label: '离线', value: 'OFFLINE' },
 ]
 const form = reactive<CompanionForm>({
@@ -331,7 +329,7 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
       </div>
     </section>
 
-    <section class="business-stats">
+    <section class="business-stats workers-summary">
       <article>
         <i class="tone-0"><UsersRound /></i>
         <div>
@@ -341,27 +339,11 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
         </div>
       </article>
       <article>
-        <i class="tone-1"><UserCheck /></i>
-        <div>
-          <p>当前在线</p>
-          <strong>{{ stats.availableCount }}</strong>
-          <small>可接受新订单</small>
-        </div>
-      </article>
-      <article>
         <i class="tone-2"><UsersRound /></i>
         <div>
-          <p>服务中</p>
+          <p>接单中</p>
           <strong>{{ stats.busyCount }}</strong>
-          <small>正在进行服务</small>
-        </div>
-      </article>
-      <article>
-        <i class="tone-3"><CircleDollarSign /></i>
-        <div>
-          <p>平均时薪</p>
-          <strong>¥{{ stats.avgHourlyRate ?? 0 }}</strong>
-          <small>所有陪玩师均值</small>
+          <small>当前 BUSY 状态人数</small>
         </div>
       </article>
     </section>

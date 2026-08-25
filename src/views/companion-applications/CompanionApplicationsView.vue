@@ -25,14 +25,17 @@ import {
 import ListPagination from '../../components/ListPagination.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import { useAuthStore } from '../../stores/auth'
+import { useTodosStore } from '../../stores/todos'
 import type {
   CompanionApplicationStatus,
   CompanionIdentityApplication,
   CompanionReviewResult,
 } from '../../types'
+import { sortApplicationsForReview } from '../../utils/companionApplications'
 import { DEFAULT_PAGE_SIZE, pageRange } from '../../utils/pagination'
 
 const authStore = useAuthStore()
+const todosStore = useTodosStore()
 const message = useMessage()
 const dialog = useDialog()
 const rows = ref<CompanionIdentityApplication[]>([])
@@ -106,11 +109,11 @@ async function loadApplications() {
       createdFrom: toIsoDateTime(createdFrom.value),
       createdTo: toIsoDateTime(createdTo.value),
     })
-    rows.value = result.records
+    rows.value = sortApplicationsForReview(result.records)
     total.value = result.total
     pages.value = result.pages
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '身份申请列表加载失败')
+    message.error(error instanceof Error ? error.message : '陪玩申请列表加载失败')
   } finally {
     loading.value = false
   }
@@ -142,6 +145,7 @@ function handleStart(application: CompanionIdentityApplication) {
         await startCompanionAssessment(application.id)
         message.success('已开始考核')
         await loadApplications()
+        await todosStore.refresh(true)
       } catch (error) {
         message.error(error instanceof Error ? error.message : '开始考核失败')
         return false
@@ -176,6 +180,7 @@ async function submitReview() {
     reviewOpen.value = false
     message.success(reviewForm.result === 'PASS' ? '考核已通过并开通陪玩身份' : '考核结果已记录')
     await loadApplications()
+    await todosStore.refresh(true)
   } catch (error) {
     message.error(error instanceof Error ? error.message : '录入考核结果失败')
   } finally {
@@ -324,9 +329,9 @@ onMounted(loadApplications)
   <div class="business-page application-page">
     <section class="business-title">
       <div>
-        <p>IDENTITY REVIEW</p>
-        <h1>身份申请审核</h1>
-        <span>审核陪玩身份申请并记录线下考核结果</span>
+        <p>COMPANION APPLY</p>
+        <h1>陪玩申请</h1>
+        <span>审核新陪玩身份申请，待处理项优先展示</span>
       </div>
     </section>
 
@@ -353,8 +358,8 @@ onMounted(loadApplications)
       <div class="list-toolbar">
         <div class="list-toolbar-main">
           <div>
-            <h2>申请列表</h2>
-            <p>共 {{ total }} 条身份申请</p>
+            <h2>新申请列表</h2>
+            <p>共 {{ total }} 条陪玩申请，待考核优先排序</p>
           </div>
           <NSpace class="list-actions" :size="9">
             <NButton :loading="loading" @click="loadApplications">

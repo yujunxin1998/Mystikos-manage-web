@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Bell,
@@ -10,12 +10,12 @@ import {
   FileBarChart,
   Gamepad2,
   Headphones,
+  IdCard,
   LayoutDashboard,
   LogOut,
   Menu,
   Moon,
   Search,
-  Settings,
   ShoppingBag,
   Sparkles,
   Sun,
@@ -27,36 +27,72 @@ import { storeToRefs } from 'pinia'
 import ToastHost from '../components/ToastHost.vue'
 import { useAppStore } from '../stores/app'
 import { useAuthStore } from '../stores/auth'
+import { useTodosStore } from '../stores/todos'
 import { formatRoleLabels } from '../utils/roles'
 
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const todosStore = useTodosStore()
 const { dark, collapsed } = storeToRefs(appStore)
 const { user } = storeToRefs(authStore)
+const { applicationBadge, showcaseBadge, applicationPending, showcasePending, hasPending } =
+  storeToRefs(todosStore)
+
 const profileOpen = ref(false)
+const noticeOpen = ref(false)
+let pollTimer: ReturnType<typeof setInterval> | undefined
 
 const roleText = computed(() => formatRoleLabels(user.value?.roles))
 const avatarText = computed(() => user.value?.avatar || '管')
 const displayName = computed(() => user.value?.displayName || '未登录')
 
-const nav = [
-  { label: '工作台', path: '/', icon: LayoutDashboard },
+const nav = computed(() => [
+  { label: '总览', path: '/', icon: LayoutDashboard },
   { label: '用户管理', path: '/members', icon: UsersRound },
-  { label: '订单管理', path: '/orders', icon: Gamepad2, badge: '12' },
+  { label: '订单管理', path: '/orders', icon: Gamepad2 },
   { label: '陪玩师管理', path: '/workers', icon: Headphones },
-  { label: '身份申请审核', path: '/companion-applications', icon: ClipboardCheck },
-  { label: '商品管理', path: '/products', icon: ShoppingBag, badge: '6' },
+  {
+    label: '陪玩申请',
+    path: '/companion-applications',
+    icon: ClipboardCheck,
+    badge: applicationBadge.value,
+  },
+  {
+    label: '陪玩名片审核',
+    path: '/companion-showcases',
+    icon: IdCard,
+    badge: showcaseBadge.value,
+  },
+  { label: '商品管理', path: '/products', icon: ShoppingBag },
   { label: '财务中心', path: '/finance', icon: Wallet },
   { label: '数据报表', path: '/reports', icon: FileBarChart },
-]
+])
 
 const pageTitle = computed(() => {
-  const matched = nav.find((item) => item.path === route.path)
+  const matched = nav.value.find((item) => item.path === route.path)
   if (matched) return matched.label
-  if (route.path === '/settings') return '系统设置'
-  return '工作台'
+  return '总览'
+})
+
+const noticeItems = computed(() => {
+  const items: Array<{ label: string; path: string; count: number }> = []
+  if (applicationPending.value > 0) {
+    items.push({
+      label: '陪玩申请待处理',
+      path: '/companion-applications',
+      count: applicationPending.value,
+    })
+  }
+  if (showcasePending.value > 0) {
+    items.push({
+      label: '陪玩名片待审核',
+      path: '/companion-showcases',
+      count: showcasePending.value,
+    })
+  }
+  return items
 })
 
 function isActive(path: string): boolean {
@@ -69,36 +105,67 @@ function navigate(path: string) {
 }
 
 function toggleProfile() {
+  noticeOpen.value = false
   profileOpen.value = !profileOpen.value
 }
 
-function closeProfile(event: MouseEvent) {
+function toggleNotice() {
+  profileOpen.value = false
+  noticeOpen.value = !noticeOpen.value
+  if (noticeOpen.value) void todosStore.refresh(true)
+}
+
+function openNoticeItem(path: string) {
+  noticeOpen.value = false
+  navigate(path)
+}
+
+function closeOverlays(event: MouseEvent) {
   const target = event.target as HTMLElement | null
-  if (!target?.closest('.profile-wrap')) {
-    profileOpen.value = false
-  }
+  if (!target?.closest('.profile-wrap')) profileOpen.value = false
+  if (!target?.closest('.notice-wrap')) noticeOpen.value = false
 }
 
 async function handleLogout() {
   try {
     authStore.logout()
     profileOpen.value = false
+    noticeOpen.value = false
     await router.replace('/login')
   } catch (error) {
     console.error('退出登录失败', error)
   }
 }
 
+watch(
+  () => route.path,
+  (path, previous) => {
+    if (
+      previous?.startsWith('/companion-applications') ||
+      previous?.startsWith('/companion-showcases') ||
+      path.startsWith('/companion-applications') ||
+      path.startsWith('/companion-showcases')
+    ) {
+      void todosStore.refresh(true)
+    }
+  },
+)
+
 onMounted(() => {
-  document.addEventListener('click', closeProfile)
+  document.addEventListener('click', closeOverlays)
   authStore.hydrateUser().catch(async () => {
     await authStore.logout()
     await router.replace('/login')
   })
+  void todosStore.refresh(true)
+  pollTimer = setInterval(() => {
+    void todosStore.refresh()
+  }, 120_000)
 })
 
 onBeforeUnmount(() => {
-  document.removeEventListener('click', closeProfile)
+  document.removeEventListener('click', closeOverlays)
+  if (pollTimer) clearInterval(pollTimer)
 })
 </script>
 
@@ -123,14 +190,6 @@ onBeforeUnmount(() => {
           <span>{{ item.label }}</span>
           <em v-if="item.badge">{{ item.badge }}</em>
         </button>
-        <p class="nav-title lower">系统</p>
-        <button
-          type="button"
-          :class="{ active: route.path === '/settings' }"
-          @click="navigate('/settings')"
-        >
-          <Settings :size="19" /><span>系统设置</span>
-        </button>
       </nav>
       <div class="support">
         <div class="support-icon"><Target :size="20" /></div>
@@ -153,13 +212,36 @@ onBeforeUnmount(() => {
           <label class="global-search">
             <Search :size="17" />
             <input placeholder="搜索订单、会员..." />
-            <kbd>⌘ K</kbd>
           </label>
           <button type="button" class="icon-btn" @click="appStore.toggleDark()">
             <Sun v-if="dark" :size="19" />
             <Moon v-else :size="19" />
           </button>
-          <button type="button" class="icon-btn notification"><Bell :size="19" /><i></i></button>
+          <div class="notice-wrap">
+            <button
+              type="button"
+              class="icon-btn notification"
+              :aria-expanded="noticeOpen"
+              aria-label="待办通知"
+              @click.stop="toggleNotice"
+            >
+              <Bell :size="19" />
+              <i v-if="hasPending"></i>
+            </button>
+            <div v-if="noticeOpen" class="notice-menu">
+              <p class="notice-title">待处理事项</p>
+              <button
+                v-for="item in noticeItems"
+                :key="item.path"
+                type="button"
+                @click="openNoticeItem(item.path)"
+              >
+                <span>{{ item.label }}</span>
+                <em>{{ item.count > 99 ? '99+' : item.count }}</em>
+              </button>
+              <p v-if="!noticeItems.length" class="notice-empty">暂无待办</p>
+            </div>
+          </div>
           <div class="profile-wrap">
             <button type="button" class="profile" @click.stop="toggleProfile">
               <span class="avatar">{{ avatarText }}</span>

@@ -21,5 +21,8 @@ describe('StatusTag', () => {
     expect(mount(StatusTag, { props: { status: '待接单' } }).classes()).toContain('status-warning')
     expect(mount(StatusTag, { props: { status: '已完成' } }).classes()).toContain('status-success')
     expect(mount(StatusTag, { props: { status: '已取消' } }).classes()).toContain('status-error')
+    expect(mount(StatusTag, { props: { status: '已流单' } }).classes()).toContain('status-error')
+    expect(mount(StatusTag, { props: { status: '已退款' } }).classes()).toContain('status-error')
+    expect(mount(StatusTag, { props: { status: '接单中' } }).classes()).toContain('status-info')
   })
 })

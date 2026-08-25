@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
         path: '',
         name: 'dashboard',
         component: () => import('../views/dashboard/DashboardView.vue'),
-        meta: { title: '工作台', requiresAuth: true },
+        meta: { title: '总览', requiresAuth: true },
       },
       {
         path: 'members',
@@ -42,7 +42,13 @@ const routes: RouteRecordRaw[] = [
         path: 'companion-applications',
         name: 'companion-applications',
         component: () => import('../views/companion-applications/CompanionApplicationsView.vue'),
-        meta: { title: '身份申请审核', requiresAuth: true },
+        meta: { title: '陪玩申请', requiresAuth: true },
+      },
+      {
+        path: 'companion-showcases',
+        name: 'companion-showcases',
+        component: () => import('../views/companion-showcases/CompanionShowcasesView.vue'),
+        meta: { title: '陪玩名片审核', requiresAuth: true },
       },
       {
         path: 'products',
@@ -64,9 +70,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'settings',
-        name: 'settings',
-        component: () => import('../views/settings/SettingsView.vue'),
-        meta: { title: '系统设置', requiresAuth: true },
+        redirect: '/',
       },
     ],
   },

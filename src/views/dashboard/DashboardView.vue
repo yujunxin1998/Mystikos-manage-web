@@ -25,15 +25,20 @@ import {
   type DataTableColumns,
 } from 'naive-ui'
 import { storeToRefs } from 'pinia'
+import { useRouter } from 'vue-router'
 import StatCards from '../../components/StatCards.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import { chartPaths, dashboardStats } from '../../mocks/dashboard'
 import { dashboardOrders } from '../../mocks/orders'
 import { useAuthStore } from '../../stores/auth'
+import { useTodosStore } from '../../stores/todos'
 import type { DashboardOrder } from '../../types'
 
+const router = useRouter()
 const authStore = useAuthStore()
+const todosStore = useTodosStore()
 const { user } = storeToRefs(authStore)
+const { applicationPending, showcasePending, hasPending } = storeToRefs(todosStore)
 
 const range = ref<'周' | '月'>('周')
 const showOrder = ref(false)
@@ -139,6 +144,31 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
       </NButton>
     </section>
 
+    <section v-if="hasPending" class="todo-strip" aria-label="待处理事项">
+      <button
+        v-if="applicationPending > 0"
+        type="button"
+        @click="router.push('/companion-applications')"
+      >
+        <div>
+          <span>陪玩申请待处理</span>
+          <strong>{{ applicationPending }}</strong>
+        </div>
+        <em>去处理 →</em>
+      </button>
+      <button
+        v-if="showcasePending > 0"
+        type="button"
+        @click="router.push('/companion-showcases')"
+      >
+        <div>
+          <span>陪玩名片待审核</span>
+          <strong>{{ showcasePending }}</strong>
+        </div>
+        <em>去审核 →</em>
+      </button>
+    </section>
+
     <StatCards :items="dashboardStats" :icons="statIcons" :tones="statTones" variant="dashboard" />
 
     <section class="content-grid">
@@ -193,9 +223,10 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
           </div>
           <ul>
             <li><i class="c1"></i><span>已完成</span><b>42</b><em>48.8%</em></li>
-            <li><i class="c2"></i><span>进行中</span><b>28</b><em>32.6%</em></li>
+            <li><i class="c2"></i><span>进行中</span><b>26</b><em>30.2%</em></li>
             <li><i class="c3"></i><span>待接单</span><b>12</b><em>14.0%</em></li>
-            <li><i class="c4"></i><span>已取消</span><b>4</b><em>4.6%</em></li>
+            <li><i class="c4"></i><span>已流单</span><b>4</b><em>4.7%</em></li>
+            <li><i class="c5"></i><span>已退款</span><b>2</b><em>2.3%</em></li>
           </ul>
         </div>
         <div class="completion">

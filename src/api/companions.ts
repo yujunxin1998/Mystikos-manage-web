@@ -1,13 +1,16 @@
 import type {
   ApiResponse,
+  Companion,
   CompanionApplicationQuery,
   CompanionIdentityApplication,
-  Companion,
   CompanionQuery,
+  CompanionShowcase,
+  CompanionShowcaseQuery,
   CompanionStats,
   CreateCompanionRequest,
   PageResult,
   ReviewCompanionApplicationRequest,
+  ReviewCompanionShowcaseRequest,
 } from '../types'
 import http from './http'
 import { unwrapApiResponse } from './response'
@@ -63,6 +66,27 @@ export async function reviewCompanionApplication(
 ): Promise<void> {
   const { data } = await http.put<ApiResponse<null>>(
     `/api/v1/manage/companion-applications/${id}/review`,
+    compact(request),
+  )
+  unwrapApiResponse(data)
+}
+
+export async function fetchCompanionShowcases(
+  query: CompanionShowcaseQuery,
+): Promise<PageResult<CompanionShowcase>> {
+  const { data } = await http.get<ApiResponse<PageResult<CompanionShowcase>>>(
+    '/api/v1/manage/companion-showcases',
+    { params: compact(query) },
+  )
+  return unwrapApiResponse(data)
+}
+
+export async function reviewCompanionShowcase(
+  revisionId: number,
+  request: ReviewCompanionShowcaseRequest,
+): Promise<void> {
+  const { data } = await http.put<ApiResponse<null>>(
+    `/api/v1/manage/companion-showcases/${revisionId}/review`,
     compact(request),
   )
   unwrapApiResponse(data)

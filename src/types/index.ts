@@ -31,3 +31,9 @@ export type {
   CompanionReviewResult,
   ReviewCompanionApplicationRequest,
 } from './companion-application'
+export type {
+  CompanionShowcase,
+  CompanionShowcaseQuery,
+  CompanionShowcaseStatus,
+  ReviewCompanionShowcaseRequest,
+} from './companion-showcase'
