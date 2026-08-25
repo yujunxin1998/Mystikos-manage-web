@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, h, ref } from 'vue'
 import {
   ChevronRight,
   CircleDollarSign,
@@ -11,16 +11,53 @@ import {
   Plus,
   Search,
   UserRound,
-  X,
 } from 'lucide-vue-next'
+import {
+  NButton,
+  NCard,
+  NDataTable,
+  NForm,
+  NFormItem,
+  NInput,
+  NModal,
+  NSelect,
+  NSpace,
+  type DataTableColumns,
+} from 'naive-ui'
+import { storeToRefs } from 'pinia'
 import StatCards from '../../components/StatCards.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import { chartPaths, dashboardStats } from '../../mocks/dashboard'
 import { dashboardOrders } from '../../mocks/orders'
+import { useAuthStore } from '../../stores/auth'
+import type { DashboardOrder } from '../../types'
+
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 
 const range = ref<'周' | '月'>('周')
 const showOrder = ref(false)
 const keyword = ref('')
+const orderDraft = ref({
+  member: '',
+  game: '三角洲行动',
+  amount: '299.00',
+  pay: '账户余额',
+  note: '',
+})
+
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  const period = hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好'
+  return `${period}，${user.value?.displayName || '管理员'}`
+})
+
+const todayLabel = computed(() => {
+  const now = new Date()
+  const weekdays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+  return `${weekdays[now.getDay()]} · ${months[now.getMonth()]} ${now.getDate()}`
+})
 
 const filtered = computed(() =>
   dashboardOrders.filter((order) =>
@@ -32,19 +69,74 @@ const chart = computed(() => chartPaths[range.value])
 
 const statIcons = [CircleDollarSign, Gamepad2, UserRound, Headphones]
 const statTones = ['violet', 'orange', 'blue', 'green']
+const gameOptions = [
+  { label: '三角洲行动', value: '三角洲行动' },
+  { label: '无畏契约', value: '无畏契约' },
+]
+const payOptions = [
+  { label: '账户余额', value: '账户余额' },
+  { label: '扫码支付', value: '扫码支付' },
+]
+
+const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
+  {
+    title: '订单编号',
+    key: 'id',
+    width: 170,
+    render: (row) => h('span', { class: 'order-identifier' }, row.id),
+  },
+  {
+    title: '会员',
+    key: 'user',
+    width: 130,
+    render: (row) =>
+      h('div', { class: 'member' }, [
+        h('span', row.user.slice(0, 1)),
+        row.user,
+      ]),
+  },
+  {
+    title: '游戏 / 服务',
+    key: 'game',
+    width: 180,
+    render: (row) =>
+      h('div', [h('b', row.game), h('small', { class: 'cell-sub' }, row.service)]),
+  },
+  { title: '陪玩师', key: 'worker', width: 110 },
+  {
+    title: '金额',
+    key: 'amount',
+    width: 110,
+    render: (row) => h('span', { class: 'amount' }, row.amount),
+  },
+  {
+    title: '状态',
+    key: 'status',
+    width: 100,
+    render: (row) => h(StatusTag, { status: row.status, variant: 'table' }),
+  },
+  { title: '下单时间', key: 'time', width: 120 },
+  {
+    title: '',
+    key: 'more',
+    width: 48,
+    render: () => h(MoreHorizontal, { size: 18 }),
+  },
+])
 </script>
 
 <template>
   <div class="page">
     <section class="welcome">
       <div>
-        <p class="eyebrow"><span></span> MONDAY · AUG 24</p>
-        <h1>上午好，杨林 <span>👋</span></h1>
+        <p class="eyebrow"><span></span> {{ todayLabel }}</p>
+        <h1>{{ greeting }} <span>👋</span></h1>
         <p>今天已有 <b>18</b> 笔新订单，预计营收较昨日提升 <b>12.6%</b>。</p>
       </div>
-      <button type="button" class="primary" @click="showOrder = true">
-        <Plus :size="18" /> 创建订单
-      </button>
+      <NButton type="primary" size="large" @click="showOrder = true">
+        <template #icon><Plus :size="18" /></template>
+        创建订单
+      </NButton>
     </section>
 
     <StatCards :items="dashboardStats" :icons="statIcons" :tones="statTones" variant="dashboard" />
@@ -114,102 +206,107 @@ const statTones = ['violet', 'orange', 'blue', 'green']
     </section>
 
     <section class="panel orders">
-      <div class="panel-head">
+      <div class="panel-head dashboard-order-head">
         <div>
           <h2>最新订单</h2>
           <p>实时查看最新业务订单</p>
         </div>
-        <div class="table-actions">
-          <label>
-            <Search :size="16" />
-            <input v-model="keyword" placeholder="搜索订单" />
-          </label>
-          <button type="button" class="filter"><Clock3 :size="16" /> 今日</button>
-          <button type="button" class="text-btn">全部订单 <ChevronRight :size="15" /></button>
-        </div>
+        <NSpace class="dashboard-order-actions" :size="8" align="center" wrap>
+          <NInput
+            v-model:value="keyword"
+            clearable
+            placeholder="搜索订单"
+            style="width: 220px"
+          >
+            <template #prefix><Search :size="16" /></template>
+          </NInput>
+          <NButton secondary>
+            <template #icon><Clock3 :size="16" /></template>
+            今日
+          </NButton>
+          <NButton text type="primary">
+            全部订单
+            <template #icon><ChevronRight :size="15" /></template>
+          </NButton>
+        </NSpace>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>订单编号</th>
-              <th>会员</th>
-              <th>游戏 / 服务</th>
-              <th>陪玩师</th>
-              <th>金额</th>
-              <th>状态</th>
-              <th>下单时间</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="order in filtered" :key="order.id">
-              <td class="order-id">{{ order.id }}</td>
-              <td>
-                <div class="member">
-                  <span>{{ order.user.slice(0, 1) }}</span
-                  >{{ order.user }}
-                </div>
-              </td>
-              <td>
-                <b>{{ order.game }}</b
-                ><small>{{ order.service }}</small>
-              </td>
-              <td>{{ order.worker }}</td>
-              <td class="amount">{{ order.amount }}</td>
-              <td><StatusTag :status="order.status" variant="table" /></td>
-              <td>{{ order.time }}</td>
-              <td><MoreHorizontal :size="18" /></td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="dashboard-order-table">
+        <NDataTable
+          :columns="orderColumns"
+          :data="filtered"
+          :pagination="false"
+          :row-key="(row: DashboardOrder) => row.id"
+          :scroll-x="1000"
+          :single-line="false"
+          striped
+        />
       </div>
     </section>
 
-    <div v-if="showOrder" class="modal-backdrop">
-      <div class="modal">
-        <div class="modal-head">
-          <div>
-            <h2>创建新订单</h2>
-            <p>录入会员的陪玩服务需求</p>
-          </div>
-          <button type="button" class="icon-btn" @click="showOrder = false">
-            <X :size="19" />
-          </button>
-        </div>
-        <div class="form">
-          <label><span>选择会员</span><input placeholder="输入昵称或手机号搜索" /></label>
-          <label>
-            <span>游戏项目</span>
-            <select>
-              <option>三角洲行动</option>
-              <option>无畏契约</option>
-            </select>
-          </label>
-          <div class="form-row">
-            <label>
-              <span>订单金额</span>
-              <div class="input-prefix"><i>¥</i><input value="299.00" /></div>
-            </label>
-            <label>
-              <span>支付方式</span>
-              <select>
-                <option>账户余额</option>
-                <option>扫码支付</option>
-              </select>
-            </label>
-          </div>
-          <label
-            ><span>服务备注</span><textarea placeholder="填写段位、局数或其他需求"></textarea>
-          </label>
-        </div>
-        <div class="modal-foot">
-          <button type="button" class="secondary" @click="showOrder = false">取消</button>
-          <button type="button" class="primary" @click="showOrder = false">
-            <CreditCard :size="17" /> 确认创建
-          </button>
-        </div>
-      </div>
-    </div>
+    <NModal v-model:show="showOrder" :mask-closable="false">
+      <NCard
+        class="app-form-modal"
+        title="创建新订单"
+        :bordered="false"
+        size="huge"
+        closable
+        role="dialog"
+        aria-modal="true"
+        @close="showOrder = false"
+      >
+        <p class="app-form-subtitle">录入会员的陪玩服务需求</p>
+        <NForm class="app-form-grid" label-placement="top">
+          <NFormItem label="选择会员">
+            <NInput v-model:value="orderDraft.member" placeholder="输入昵称或手机号搜索" />
+          </NFormItem>
+          <NFormItem label="游戏项目">
+            <NSelect v-model:value="orderDraft.game" :options="gameOptions" />
+          </NFormItem>
+          <NFormItem label="订单金额">
+            <NInput v-model:value="orderDraft.amount" placeholder="0.00">
+              <template #prefix>¥</template>
+            </NInput>
+          </NFormItem>
+          <NFormItem label="支付方式">
+            <NSelect v-model:value="orderDraft.pay" :options="payOptions" />
+          </NFormItem>
+          <NFormItem class="app-form-span-2" label="服务备注">
+            <NInput
+              v-model:value="orderDraft.note"
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 5 }"
+              placeholder="填写段位、局数或其他需求"
+            />
+          </NFormItem>
+        </NForm>
+        <template #footer>
+          <NSpace justify="end">
+            <NButton @click="showOrder = false">取消</NButton>
+            <NButton type="primary" @click="showOrder = false">
+              <template #icon><CreditCard :size="17" /></template>
+              确认创建
+            </NButton>
+          </NSpace>
+        </template>
+      </NCard>
+    </NModal>
   </div>
 </template>
+
+<style scoped>
+.dashboard-order-head {
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard-order-actions {
+  margin-left: auto;
+}
+
+.dashboard-order-table {
+  min-width: 0;
+  overflow-x: auto;
+  border-top: 1px solid var(--app-border);
+}
+</style>

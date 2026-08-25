@@ -6,6 +6,10 @@ export interface AuthUser {
   displayName: string
   roles: UserRole[]
   avatar: string
+  nickname?: string
+  phone?: string
+  email?: string
+  avatarUrl?: string
 }
 
 export interface LoginForm {

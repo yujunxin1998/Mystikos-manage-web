@@ -27,6 +27,7 @@ import { storeToRefs } from 'pinia'
 import ToastHost from '../components/ToastHost.vue'
 import { useAppStore } from '../stores/app'
 import { useAuthStore } from '../stores/auth'
+import { formatRoleLabels } from '../utils/roles'
 
 const route = useRoute()
 const router = useRouter()
@@ -35,6 +36,10 @@ const authStore = useAuthStore()
 const { dark, collapsed } = storeToRefs(appStore)
 const { user } = storeToRefs(authStore)
 const profileOpen = ref(false)
+
+const roleText = computed(() => formatRoleLabels(user.value?.roles))
+const avatarText = computed(() => user.value?.avatar || '管')
+const displayName = computed(() => user.value?.displayName || '未登录')
 
 const nav = [
   { label: '工作台', path: '/', icon: LayoutDashboard },
@@ -157,10 +162,10 @@ onBeforeUnmount(() => {
           <button type="button" class="icon-btn notification"><Bell :size="19" /><i></i></button>
           <div class="profile-wrap">
             <button type="button" class="profile" @click.stop="toggleProfile">
-              <span class="avatar">{{ user?.avatar || 'YL' }}</span>
+              <span class="avatar">{{ avatarText }}</span>
               <div>
-                <b>{{ user?.displayName || '未登录' }}</b>
-                <small>{{ user?.roles?.join(' / ') || '访客' }}</small>
+                <b>{{ displayName }}</b>
+                <small>{{ roleText }}</small>
               </div>
               <ChevronDown :size="15" />
             </button>

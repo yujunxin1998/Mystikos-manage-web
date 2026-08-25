@@ -69,7 +69,7 @@ async function handleSubmit() {
         <p>登录后进入运营中心，管理会员、订单与经营数据</p>
       </div>
 
-      <form class="login-form" @submit.prevent="handleSubmit">
+      <form class="login-form" data-allow-autofill @submit.prevent="handleSubmit">
         <div
           class="login-channel"
           :class="{ 'is-email': form.channel === 'EMAIL' }"

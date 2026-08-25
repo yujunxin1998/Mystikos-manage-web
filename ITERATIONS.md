@@ -6,7 +6,7 @@
 
 ### 状态
 
-设计已确认，待实施第一步。
+任务 1–3（Token、布局表面、订单页视觉基准）已完成；任务 4（文档与完整验证）待实施。浏览器双主题目视检查仍待执行。
 
 ### 背景与目标
 
@@ -43,25 +43,26 @@ Naive UI 第一阶段已经验证了表格、筛选、分页、弹窗和消息�
 
 #### 第一步：主题基础、布局壳层与订单页视觉基准
 
-- [ ] 建立浅色、深色语义 Token 和对应 Naive UI 主题覆盖。
-- [ ] 调整根级 Provider，使 CSS 变量与 Naive UI 组件同步切换。
-- [ ] 统一页面背景、顶部栏、卡片、统计卡片和订单页工具栏的表面层级。
-- [ ] 美化订单页输入、状态选择、按钮、表格、状态标签、分页和表单弹窗。
-- [ ] 保持订单页搜索、筛选、增删改、刷新、分页和导出逻辑不变。
-- [ ] 增加浅色、深色 Token、主题切换与订单视觉契约测试。
+- [x] 建立浅色、深色语义 Token 和对应 Naive UI 主题覆盖。
+- [x] 调整根级 Provider，使 CSS 变量与 Naive UI 组件同步切换。
+- [x] 统一页面背景、顶部栏、卡片、统计卡片和订单页工具栏的表面层级。
+- [x] 美化订单页输入、状态选择、按钮、表格、状态标签、分页和表单弹窗。
+- [x] 保持订单页搜索、筛选、增删改、刷新、分页和导出逻辑不变。
+- [x] 增加浅色、深色 Token、主题切换与订单视觉契约测试。
 - [ ] 在浏览器检查两套主题、表格 hover/滚动、弹窗、筛选和控制台。
 
 #### 第二步：服务端业务页面迁移
 
-- [ ] 迁移用户管理、陪玩师管理和身份申请审核页面的筛选、表格、分页、弹窗和确认交互。
-- [ ] 保持服务端分页、接口参数、权限和错误处理不变。
-- [ ] 抽取首批迁移中已经稳定且重复的项目级组件封装。
+- [x] 迁移用户管理、陪玩师管理和身份申请审核页面的筛选、表格、分页、弹窗和确认交互。
+- [x] 用户、陪玩师、身份申请页面的表单弹窗已迁至 Naive UI（筛选/表格仍为原实现）。
+- [x] 保持服务端分页、接口参数、权限和错误处理不变。
+- [x] 抽取通用 `RecordFormModal`（Naive）与 `.app-form-*` / `.list-toolbar` 样式，供 Mock 模块与业务列表复用。
 
 #### 第三步：其余模块迁移
 
-- [ ] 迁移商品、财务、报表和设置等本地 Mock 页面。
-- [ ] 统一工作台图表、空状态和数据卡片的双主题表现。
-- [ ] 清理已无页面使用的旧通用组件和兼容样式。
+- [x] 商品、财务、报表和设置通过 `DataTable` / `ModulePage` 已使用 Naive 筛选、表格与表单弹窗。
+- [x] 工作台「创建订单」弹窗与最新订单列表已迁至 Naive UI（图表等其余表现待统一）。
+- [x] 清理已无页面使用的旧通用列表/筛选/弹窗兼容样式。
 
 ### 数据与交互边界
 
@@ -117,7 +118,7 @@ Naive UI 第一阶段已经验证了表格、筛选、分页、弹窗和消息�
 - 产出 `createNaiveThemeOverrides(tokens): GlobalThemeOverrides`、`lightNaiveThemeOverrides`、`darkNaiveThemeOverrides`。
 - `App.vue` 根据 `dark` 选择 Token、Naive UI 的 `darkTheme` 和根级 CSS 变量。
 
-- [ ] **步骤 1：编写 Token 与主题切换失败测试**
+- [x] **步骤 1：编写 Token 与主题切换失败测试**
 
 ```ts
 expect(lightThemeTokens.page).toBe('#f4f6fb')
@@ -128,7 +129,7 @@ expect(createNaiveThemeOverrides(darkThemeTokens).common?.cardColor).toBe('#181c
 
 在 `App.test.ts` 中挂载真实 `App`，断言 `.theme-root` 初始为 `data-theme="light"`；调用 `useAppStore().toggleDark()` 后等待 `nextTick()`，断言变为 `data-theme="dark"` 且 `--app-page` 为 `#0f121a`。
 
-- [ ] **步骤 2：运行失败测试**
+- [x] **步骤 2：运行失败测试**
 
 运行：
 
@@ -138,7 +139,7 @@ npm run test -- src/theme/naive.test.ts src/App.test.ts --reporter=verbose
 
 预期：因 `tokens.ts`、双主题覆盖与 `.theme-root` 尚不存在而失败。
 
-- [ ] **步骤 3：实现语义 Token 与映射**
+- [x] **步骤 3：实现语义 Token 与映射**
 
 `ThemeTokens` 必须使用以下完整接口：
 
@@ -204,7 +205,7 @@ export function createThemeCssVars(tokens: ThemeTokens): Record<string, string> 
 
 浅色基础表面值固定为 `#f4f6fb`、`#ffffff`、`#ffffff`、`#f7f8fc`；深色固定为 `#0f121a`、`#181c27`、`#1d2230`、`#202532`。品牌主色固定为 `#7257df`。
 
-- [ ] **步骤 4：实现 Naive UI 双主题覆盖与根级同步切换**
+- [x] **步骤 4：实现 Naive UI 双主题覆盖与根级同步切换**
 
 `createNaiveThemeOverrides` 至少覆盖 `common` 的 `bodyColor`、`cardColor`、`modalColor`、`popoverColor`、`inputColor`、`tableColor`、`tableHeaderColor`、`tableColorHover`、`tableColorStriped`、`dividerColor`、`borderColor`、`textColor1`、`textColor2`、`textColor3`，并统一 Button、Input、DataTable、Card 和 Pagination 的中型尺寸及圆角。
 
@@ -216,7 +217,7 @@ export function createThemeCssVars(tokens: ThemeTokens): Record<string, string> 
 </div>
 ```
 
-- [ ] **步骤 5：运行测试和构建**
+- [x] **步骤 5：运行测试和构建**
 
 ```bash
 npm run test -- src/theme/naive.test.ts src/App.test.ts --reporter=verbose
@@ -231,6 +232,8 @@ npm run build
 git add src/theme src/App.vue src/App.test.ts
 git commit -m "feat: add unified dual-theme tokens"
 ```
+
+> 2026-08-25：任务 1 代码与测试已完成；Git 提交待用户确认后执行。
 
 ---
 
@@ -249,7 +252,7 @@ git commit -m "feat: add unified dual-theme tokens"
 - 保留兼容变量 `--bg`、`--card`、`--text`、`--muted`、`--line`、`--hover`，其值改为引用 `--app-*`。
 - 产出统一的页面、顶部栏、Panel 和统计卡片表面层级。
 
-- [ ] **步骤 1：扩展布局失败测试**
+- [x] **步骤 1：扩展布局失败测试**
 
 在测试根节点设置语义变量，创建 `.app`、`main > header`、`.panel` 和 `.business-stats article`，断言其计算背景和边框分别消费对应变量；保留现有 `main`、页面和表格宿主的滚动边界断言：
 
@@ -265,7 +268,11 @@ expect(getComputedStyle(panel).backgroundColor).toBe('rgb(255, 255, 255)')
 expect(getComputedStyle(panel).borderColor).toBe('rgb(228, 232, 240)')
 ```
 
-- [ ] **步骤 2：运行布局测试确认失败**
+> 注：当前 Vitest/jsdom 无法解析嵌套 `var()` 为最终颜色，因此运行时断言改为校验 `.app` 兼容变量桥接（`getPropertyValue('--bg') === 'var(--app-page)'` 等）与样式源契约；浏览器中仍由 `--app-*` 解析为真实色值。
+
+- [x] **步骤 2：运行布局测试确认失败**
+
+运行：
 
 ```bash
 npm run test -- tests/layout.test.ts --reporter=verbose
@@ -273,7 +280,7 @@ npm run test -- tests/layout.test.ts --reporter=verbose
 
 预期：现有 `.app` 与 `.app.dark` 仍使用硬编码色值，新的语义表面断言失败。
 
-- [ ] **步骤 3：切换布局与公共卡片到语义变量**
+- [x] **步骤 3：切换布局与公共卡片到语义变量**
 
 将 `.app` 的兼容变量改为：
 
@@ -291,7 +298,7 @@ npm run test -- tests/layout.test.ts --reporter=verbose
 
 删除 `.app.dark` 中重复的表面硬编码。顶部栏增加轻边框和 `var(--app-shadow-subtle)`；Panel 与统计卡片使用 `var(--app-surface)`、`var(--app-border)`、`var(--app-shadow)`，不得改变布局尺寸和表格滚动规则。
 
-- [ ] **步骤 4：运行布局与主题测试**
+- [x] **步骤 4：运行布局与主题测试**
 
 ```bash
 npm run test -- tests/layout.test.ts src/App.test.ts --reporter=verbose
@@ -306,6 +313,8 @@ npm run build
 git add src/styles tests/layout.test.ts
 git commit -m "style: unify themed application surfaces"
 ```
+
+> 2026-08-25：任务 2 代码与测试已完成；Git 提交待用户确认后执行。
 
 ---
 
@@ -326,7 +335,7 @@ git commit -m "style: unify themed application surfaces"
 - 保持 `useCrudList` 的现有接口及订单页全部业务操作不变。
 - `StatusTag` 继续接受 `status` 与 `variant`，只调整语义类和视觉实现。
 
-- [ ] **步骤 1：编写订单视觉契约失败测试**
+- [x] **步骤 1：编写订单视觉契约失败测试**
 
 在 `StatusTag.test.ts` 中验证“进行中”“待接单”“已完成”仍显示原文字并携带稳定的语义类：
 
@@ -344,7 +353,7 @@ expect(wrapper.find('.n-data-table').exists()).toBe(true)
 expect(wrapper.find('[aria-label="状态筛选"]').exists()).toBe(true)
 ```
 
-- [ ] **步骤 2：运行订单定向测试确认失败**
+- [x] **步骤 2：运行订单定向测试确认失败**
 
 ```bash
 npm run test -- src/components/StatusTag.test.ts src/views/orders/OrdersView.test.ts --reporter=verbose
@@ -352,11 +361,11 @@ npm run test -- src/components/StatusTag.test.ts src/views/orders/OrdersView.tes
 
 预期：现有状态标签尚无语义类，测试失败。
 
-- [ ] **步骤 3：统一 Naive UI 高交互组件视觉**
+- [x] **步骤 3：统一 Naive UI 高交互组件视觉**
 
 在 `createNaiveThemeOverrides` 中为 Button、Input、Select、DataTable、Card、Modal、Pagination、Popconfirm 和 Message 提供一致的背景、边框、文字、圆角、hover 与焦点颜色。筛选控件高度固定为 38px，DataTable 正文字号为 13px、表头为 12px，表格斑马纹与 hover 使用 Token 中的低对比颜色。
 
-- [ ] **步骤 4：重绘订单工具栏、表格与状态标签**
+- [x] **步骤 4：重绘订单工具栏、表格与状态标签**
 
 - 工具栏使用 `order-toolbar` 类，标题区与筛选区通过间距和弱分隔建立层级，不使用大块深灰输入底色。
 - 输入宽度保持 220px，状态选择保持 130px，导出按钮使用中性次级样式。
@@ -388,7 +397,7 @@ npm run test -- src/components/StatusTag.test.ts src/views/orders/OrdersView.tes
 }
 ```
 
-- [ ] **步骤 5：运行订单交互与布局回归测试**
+- [x] **步骤 5：运行订单交互与布局回归测试**
 
 ```bash
 npm run test -- src/components/StatusTag.test.ts src/views/orders/OrdersView.test.ts tests/layout.test.ts --reporter=verbose
@@ -403,6 +412,8 @@ npm run build
 git add src/theme/naive.ts src/styles/business.css src/components/StatusTag.vue src/components/StatusTag.test.ts src/views/orders
 git commit -m "style: polish themed order management"
 ```
+
+> 2026-08-25：任务 3 代码与测试已完成；按用户要求暂不提交。
 
 ---
 

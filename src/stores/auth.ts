@@ -9,7 +9,9 @@ import {
   getStoredValue,
   storeAuthValue,
 } from '../api/auth-storage'
-import type { AuthUser, LoginForm } from '../types'
+import { fetchMyProfile } from '../api/profile'
+import type { AuthUser, LoginForm, UserProfile, UserRole } from '../types'
+import { avatarInitial, resolveDisplayName } from '../utils/roles'
 
 function loadInitialUser(): AuthUser | null {
   try {
@@ -17,6 +19,29 @@ function loadInitialUser(): AuthUser | null {
     return raw ? (JSON.parse(raw) as AuthUser) : null
   } catch {
     return null
+  }
+}
+
+function buildAuthUser(
+  userId: number,
+  roles: UserRole[],
+  profile: Pick<UserProfile, 'nickname' | 'phone' | 'email' | 'avatarUrl'> | null,
+): AuthUser {
+  const displayName = resolveDisplayName({
+    userId,
+    nickname: profile?.nickname,
+    phone: profile?.phone,
+    email: profile?.email,
+  })
+  return {
+    id: userId,
+    displayName,
+    roles,
+    avatar: avatarInitial(displayName),
+    nickname: profile?.nickname?.trim() || undefined,
+    phone: profile?.phone || undefined,
+    email: profile?.email || undefined,
+    avatarUrl: profile?.avatarUrl || undefined,
   }
 }
 
@@ -28,6 +53,24 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => Boolean(accessToken.value))
 
+  function persistUser(nextUser: AuthUser, remember: boolean) {
+    user.value = nextUser
+    storeAuthValue(USER_KEY, JSON.stringify(nextUser), remember)
+  }
+
+  async function hydrateUser(): Promise<void> {
+    if (!accessToken.value) return
+    const remember = Boolean(localStorage.getItem(ACCESS_TOKEN_KEY))
+    const current = await getCurrentUser()
+    let profile: UserProfile | null = null
+    try {
+      profile = await fetchMyProfile()
+    } catch (error) {
+      console.warn('读取个人资料失败，将使用账号标识展示', error)
+    }
+    persistUser(buildAuthUser(current.userId, current.roles, profile), remember)
+  }
+
   async function login(form: LoginForm): Promise<void> {
     loading.value = true
     try {
@@ -37,35 +80,24 @@ export const useAuthStore = defineStore('auth', () => {
         credentialType: 'PASSWORD',
         credential: form.password,
       })
-      const nextUser: AuthUser = {
-        id: result.userId,
-        displayName: `管理员 #${result.userId}`,
-        roles: ['ADMIN'],
-        avatar: '管',
-      }
       accessToken.value = result.accessToken
       refreshToken.value = result.refreshToken
-      user.value = nextUser
       storeAuthValue(ACCESS_TOKEN_KEY, result.accessToken, form.remember)
       storeAuthValue(REFRESH_TOKEN_KEY, result.refreshToken, form.remember)
-      storeAuthValue(USER_KEY, JSON.stringify(nextUser), form.remember)
+      // 先写入占位信息，再拉取 /auth/me + /profile/me
+      persistUser(
+        buildAuthUser(result.userId, ['ADMIN'], {
+          nickname: form.identifier.trim(),
+          phone: form.channel === 'PHONE' ? form.identifier.trim() : undefined,
+          email: form.channel === 'EMAIL' ? form.identifier.trim() : undefined,
+          avatarUrl: undefined,
+        }),
+        form.remember,
+      )
+      await hydrateUser()
     } finally {
       loading.value = false
     }
-  }
-
-  async function hydrateUser(): Promise<void> {
-    if (!accessToken.value) return
-    const current = await getCurrentUser()
-    const nextUser: AuthUser = {
-      id: current.userId,
-      displayName: `管理员 #${current.userId}`,
-      roles: current.roles,
-      avatar: '管',
-    }
-    user.value = nextUser
-    const remember = Boolean(localStorage.getItem(ACCESS_TOKEN_KEY))
-    storeAuthValue(USER_KEY, JSON.stringify(nextUser), remember)
   }
 
   async function logout(): Promise<void> {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import {
   darkTheme,
@@ -10,23 +10,56 @@ import {
   zhCN,
 } from 'naive-ui'
 import { useAppStore } from './stores/app'
-import { mystikosThemeOverrides } from './theme/naive'
+import {
+  createThemeCssVars,
+  darkNaiveThemeOverrides,
+  darkThemeTokens,
+  lightNaiveThemeOverrides,
+  lightThemeTokens,
+} from './theme/naive'
+import { watchDisableBrowserAutofill } from './utils/disableBrowserAutofill'
 
 const appStore = useAppStore()
 const { dark } = storeToRefs(appStore)
 const naiveTheme = computed(() => (dark.value ? darkTheme : null))
+const themeOverrides = computed(() =>
+  dark.value ? darkNaiveThemeOverrides : lightNaiveThemeOverrides,
+)
+const themeCssVars = computed(() =>
+  createThemeCssVars(dark.value ? darkThemeTokens : lightThemeTokens),
+)
+
+const themeRootRef = ref<HTMLElement | null>(null)
+let stopAutofillWatch: (() => void) | undefined
+
+onMounted(() => {
+  if (themeRootRef.value) {
+    stopAutofillWatch = watchDisableBrowserAutofill(themeRootRef.value)
+  }
+})
+
+onBeforeUnmount(() => {
+  stopAutofillWatch?.()
+})
 </script>
 
 <template>
   <NConfigProvider
     :theme="naiveTheme"
-    :theme-overrides="mystikosThemeOverrides"
+    :theme-overrides="themeOverrides"
     :locale="zhCN"
     :date-locale="dateZhCN"
   >
     <NDialogProvider>
       <NMessageProvider>
-        <RouterView />
+        <div
+          ref="themeRootRef"
+          class="theme-root"
+          :data-theme="dark ? 'dark' : 'light'"
+          :style="themeCssVars"
+        >
+          <RouterView />
+        </div>
       </NMessageProvider>
     </NDialogProvider>
   </NConfigProvider>

@@ -1,8 +1,17 @@
 <script setup lang="ts">
-import { Check, X } from 'lucide-vue-next'
+import {
+  NButton,
+  NCard,
+  NForm,
+  NFormItem,
+  NInput,
+  NModal,
+  NSelect,
+  NSpace,
+} from 'naive-ui'
 import type { FormField, RowRecord } from '../types'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
   title: string
   subtitle: string
@@ -17,63 +26,68 @@ const emit = defineEmits<{
   submit: []
   'update:form': [value: RowRecord]
 }>()
+
+function updateField(key: string, value: string | null) {
+  emit('update:form', { ...props.form, [key]: value ?? '' })
+}
+
+function selectOptions(field: FormField) {
+  const options = field.options?.length ? field.options : props.statusOptions
+  if (options.length) {
+    return options.map((option) => ({ label: option, value: option }))
+  }
+  return [{ label: props.defaultStatus, value: props.defaultStatus }]
+}
+
+function onShowUpdate(show: boolean) {
+  if (!show) emit('close')
+}
 </script>
 
 <template>
-  <div v-if="open" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-head">
-        <div>
-          <h2>{{ title }}</h2>
-          <p>{{ subtitle }}</p>
-        </div>
-        <button type="button" class="icon-btn" @click="emit('close')"><X :size="19" /></button>
-      </div>
-      <div class="business-form dynamic-form">
-        <label v-for="field in fields" :key="field.key">
-          <span>{{ field.label }}</span>
-          <select
+  <NModal :show="open" :mask-closable="false" @update:show="onShowUpdate">
+    <NCard
+      class="app-form-modal"
+      :title="title"
+      :bordered="false"
+      size="huge"
+      closable
+      role="dialog"
+      aria-modal="true"
+      @close="emit('close')"
+    >
+      <p class="app-form-subtitle">{{ subtitle }}</p>
+      <NForm class="app-form-grid" label-placement="top">
+        <NFormItem v-for="field in fields" :key="field.key" :label="field.label">
+          <NSelect
             v-if="field.type === 'select'"
             :value="form[field.key]"
-            @change="
-              emit('update:form', {
-                ...form,
-                [field.key]: ($event.target as HTMLSelectElement).value,
-              })
-            "
-          >
-            <option v-for="item in field.options || statusOptions" :key="item">{{ item }}</option>
-            <option v-if="!(field.options || statusOptions).length">{{ defaultStatus }}</option>
-          </select>
-          <textarea
+            :options="selectOptions(field)"
+            :placeholder="field.placeholder || `请选择${field.label}`"
+            @update:value="(value) => updateField(field.key, value)"
+          />
+          <NInput
             v-else-if="field.type === 'textarea'"
+            type="textarea"
             :value="form[field.key]"
             :placeholder="field.placeholder"
-            @input="
-              emit('update:form', {
-                ...form,
-                [field.key]: ($event.target as HTMLTextAreaElement).value,
-              })
-            "
-          ></textarea>
-          <input
+            :autosize="{ minRows: 3, maxRows: 6 }"
+            @update:value="(value) => updateField(field.key, value)"
+          />
+          <NInput
             v-else
             :value="form[field.key]"
-            :type="field.type === 'url' ? 'url' : 'text'"
             :placeholder="field.placeholder || `请输入${field.label}`"
-            @input="
-              emit('update:form', {
-                ...form,
-                [field.key]: ($event.target as HTMLInputElement).value,
-              })
-            "
+            @update:value="(value) => updateField(field.key, value)"
           />
-        </label>
-      </div>
-      <div class="modal-foot">
-        <button type="button" class="secondary" @click="emit('close')">取消</button>
-        <button type="button" class="primary" @click="emit('submit')"><Check :size="17" />确认提交</button>
-      </div>
-    </div>
-  </div>
+        </NFormItem>
+      </NForm>
+      <template #footer>
+        <NSpace justify="end">
+          <NButton @click="emit('close')">取消</NButton>
+          <NButton type="primary" @click="emit('submit')">确认提交</NButton>
+        </NSpace>
+      </template>
+    </NCard>
+  </NModal>
 </template>

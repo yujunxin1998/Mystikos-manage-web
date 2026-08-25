@@ -1,22 +1,174 @@
 import type { GlobalThemeOverrides } from 'naive-ui'
+import {
+  createThemeCssVars,
+  darkThemeTokens,
+  lightThemeTokens,
+  type ThemeTokens,
+} from './tokens'
 
-export const mystikosThemeOverrides: GlobalThemeOverrides = {
-  common: {
-    primaryColor: '#7257df',
-    primaryColorHover: '#8067e7',
-    primaryColorPressed: '#6548cf',
-    primaryColorSuppl: '#7257df',
-    borderRadius: '9px',
-    borderRadiusSmall: '7px',
-    fontFamily:
-      'HarmonyOS Sans SC, MiSans, PingFang SC, Microsoft YaHei UI, Microsoft YaHei, sans-serif',
-  },
-  Button: {
-    heightMedium: '40px',
-    borderRadiusMedium: '9px',
-  },
-  Input: {
-    heightMedium: '40px',
-    borderRadius: '8px',
-  },
+const fontFamily =
+  'HarmonyOS Sans SC, MiSans, PingFang SC, Microsoft YaHei UI, Microsoft YaHei, sans-serif'
+
+export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverrides {
+  return {
+    common: {
+      primaryColor: tokens.primary,
+      primaryColorHover: tokens.primaryHover,
+      primaryColorPressed: tokens.primaryPressed,
+      primaryColorSuppl: tokens.primary,
+      bodyColor: tokens.page,
+      cardColor: tokens.surface,
+      modalColor: tokens.surfaceRaised,
+      popoverColor: tokens.surfaceRaised,
+      inputColor: tokens.surface,
+      tableColor: tokens.surface,
+      tableHeaderColor: tokens.surfaceMuted,
+      tableColorHover: tokens.tableHover,
+      tableColorStriped: tokens.tableStriped,
+      dividerColor: tokens.border,
+      borderColor: tokens.border,
+      textColor1: tokens.text,
+      textColor2: tokens.textMuted,
+      textColor3: tokens.textMuted,
+      hoverColor: tokens.hover,
+      borderRadius: '9px',
+      borderRadiusSmall: '7px',
+      fontFamily,
+      successColor: tokens.success,
+      warningColor: tokens.warning,
+      errorColor: tokens.error,
+      infoColor: tokens.info,
+    },
+    Button: {
+      heightMedium: '40px',
+      heightSmall: '32px',
+      borderRadiusMedium: '9px',
+      borderRadiusSmall: '8px',
+      textColor: tokens.text,
+      textColorHover: tokens.primary,
+      textColorPressed: tokens.primaryPressed,
+      // 主按钮显式使用品牌紫，避免深色主题默认发淡
+      colorPrimary: tokens.primary,
+      colorHoverPrimary: tokens.primaryHover,
+      colorPressedPrimary: tokens.primaryPressed,
+      colorFocusPrimary: tokens.primaryHover,
+      colorDisabledPrimary: tokens.primary,
+      textColorPrimary: '#ffffff',
+      textColorHoverPrimary: '#ffffff',
+      textColorPressedPrimary: '#ffffff',
+      textColorFocusPrimary: '#ffffff',
+      textColorDisabledPrimary: '#ffffff',
+      borderPrimary: `1px solid ${tokens.primary}`,
+      borderHoverPrimary: `1px solid ${tokens.primaryHover}`,
+      borderPressedPrimary: `1px solid ${tokens.primaryPressed}`,
+      borderFocusPrimary: `1px solid ${tokens.primaryHover}`,
+      borderDisabledPrimary: `1px solid ${tokens.primary}`,
+      rippleColorPrimary: tokens.primary,
+      colorSecondary: tokens.surfaceMuted,
+      colorSecondaryHover: tokens.hover,
+      colorSecondaryPressed: tokens.selected,
+      colorQuaternaryHover: tokens.hover,
+      colorQuaternaryPressed: tokens.selected,
+      textColorError: tokens.error,
+      textColorHoverError: tokens.error,
+      textColorTextError: tokens.error,
+      textColorTextHoverError: tokens.error,
+      colorQuaternary: 'transparent',
+    },
+    Input: {
+      heightMedium: '38px',
+      borderRadius: '8px',
+      color: tokens.surface,
+      colorFocus: tokens.surface,
+      border: `1px solid ${tokens.border}`,
+      borderHover: `1px solid ${tokens.borderStrong}`,
+      borderFocus: `1px solid ${tokens.primary}`,
+      textColor: tokens.text,
+      placeholderColor: tokens.textMuted,
+      caretColor: tokens.primary,
+      boxShadowFocus: `0 0 0 2px ${tokens.selected}`,
+    },
+    Select: {
+      peers: {
+        InternalSelection: {
+          heightMedium: '38px',
+          borderRadius: '8px',
+          color: tokens.surface,
+          colorActive: tokens.surface,
+          border: `1px solid ${tokens.border}`,
+          borderHover: `1px solid ${tokens.borderStrong}`,
+          borderActive: `1px solid ${tokens.primary}`,
+          borderFocus: `1px solid ${tokens.primary}`,
+          textColor: tokens.text,
+          placeholderColor: tokens.textMuted,
+          boxShadowHover: 'none',
+          boxShadowActive: `0 0 0 2px ${tokens.selected}`,
+          boxShadowFocus: `0 0 0 2px ${tokens.selected}`,
+        },
+      },
+    },
+    DataTable: {
+      borderRadius: '0',
+      borderColor: tokens.border,
+      thColor: tokens.surfaceMuted,
+      thTextColor: tokens.textMuted,
+      thFontWeight: '500',
+      fontSizeMedium: '13px',
+      tdColor: tokens.surface,
+      tdColorHover: tokens.tableHover,
+      tdColorStriped: tokens.tableStriped,
+      tdTextColor: tokens.text,
+      thPaddingMedium: '12px 16px',
+      tdPaddingMedium: '14px 16px',
+    },
+    Card: {
+      borderRadius: '13px',
+      color: tokens.surfaceRaised,
+      borderColor: tokens.border,
+      titleTextColor: tokens.text,
+      textColor: tokens.text,
+      paddingMedium: '20px',
+      titleFontSizeMedium: '15px',
+      boxShadow: tokens.shadow,
+    },
+    Dialog: {
+      borderRadius: '13px',
+      color: tokens.surfaceRaised,
+      titleTextColor: tokens.text,
+      textColor: tokens.text,
+      padding: '20px 24px',
+    },
+    Pagination: {
+      itemSizeMedium: '32px',
+      itemBorderRadius: '8px',
+      itemTextColor: tokens.textMuted,
+      itemTextColorHover: tokens.primary,
+      itemTextColorActive: '#ffffff',
+      itemColor: 'transparent',
+      itemColorHover: tokens.hover,
+      itemColorActive: tokens.primary,
+      itemColorActiveHover: tokens.primaryHover,
+      itemBorder: `1px solid ${tokens.border}`,
+      itemBorderActive: `1px solid ${tokens.primary}`,
+      buttonColor: tokens.surface,
+      buttonBorder: `1px solid ${tokens.border}`,
+      buttonIconColor: tokens.textMuted,
+    },
+    Popconfirm: {
+      padding: '14px 16px',
+    },
+    Message: {
+      borderRadius: '10px',
+      padding: '12px 16px',
+    },
+  }
 }
+
+export const lightNaiveThemeOverrides = createNaiveThemeOverrides(lightThemeTokens)
+export const darkNaiveThemeOverrides = createNaiveThemeOverrides(darkThemeTokens)
+
+/** @deprecated 使用 lightNaiveThemeOverrides / darkNaiveThemeOverrides */
+export const mystikosThemeOverrides = lightNaiveThemeOverrides
+
+export { createThemeCssVars, darkThemeTokens, lightThemeTokens }
+export type { ThemeTokens }

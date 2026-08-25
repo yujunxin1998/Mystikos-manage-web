@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
 import { RefreshCcw } from 'lucide-vue-next'
+import { NButton, NSpace } from 'naive-ui'
 import DataTable from './DataTable.vue'
 import RecordFormModal from './RecordFormModal.vue'
 import StatCards from './StatCards.vue'
@@ -44,14 +45,6 @@ const {
         <h1>{{ meta.title }}</h1>
         <span>{{ meta.desc }}</span>
       </div>
-      <div>
-        <button type="button" class="outline-action" @click="resetRows">
-          <RefreshCcw :size="16" />刷新
-        </button>
-        <button type="button" class="primary" @click="openCreate">
-          <component :is="actionIcon" :size="17" />{{ meta.action }}
-        </button>
-      </div>
     </section>
 
     <StatCards :items="meta.stats" :icons="statIcons" variant="business" />
@@ -71,7 +64,20 @@ const {
       @export="exportRows"
       @edit="openEdit"
       @remove="removeRow"
-    />
+    >
+      <template #actions>
+        <NSpace :size="9">
+          <NButton @click="resetRows">
+            <template #icon><RefreshCcw :size="16" /></template>
+            刷新
+          </NButton>
+          <NButton type="primary" @click="openCreate">
+            <template #icon><component :is="actionIcon" :size="17" /></template>
+            {{ meta.action }}
+          </NButton>
+        </NSpace>
+      </template>
+    </DataTable>
 
     <RecordFormModal
       :open="modal"

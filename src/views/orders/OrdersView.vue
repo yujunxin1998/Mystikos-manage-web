@@ -8,7 +8,6 @@ import {
   NFormItem,
   NInput,
   NModal,
-  NPagination,
   NPopconfirm,
   NSelect,
   NSpace,
@@ -27,16 +26,18 @@ import {
   TrendingUp,
   UsersRound,
 } from 'lucide-vue-next'
+import ListPagination from '../../components/ListPagination.vue'
 import StatCards from '../../components/StatCards.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import { useCrudList } from '../../composables/useCrudList'
 import { orderMeta, orderRows } from '../../mocks/orders'
 import type { Order } from '../../types'
+import { DEFAULT_PAGE_SIZE, pageRange } from '../../utils/pagination'
 
 const statIcons = [TrendingUp, UsersRound, Gamepad2, CircleDollarSign]
 const message = useMessage()
 const page = ref(1)
-const pageSize = 10
+const pageSize = ref(DEFAULT_PAGE_SIZE)
 
 const {
   keyword,
@@ -63,13 +64,14 @@ const statusSelectOptions = computed(() => [
   { label: '全部状态', value: '全部状态' },
   ...statusOptions.value.map((status) => ({ label: status, value: status })),
 ])
-const pageCount = computed(() => Math.max(1, Math.ceil(rows.value.length / pageSize)))
+const pageCount = computed(() => Math.max(1, Math.ceil(rows.value.length / pageSize.value)))
 const pageRows = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return rows.value.slice(start, start + pageSize)
+  const start = (page.value - 1) * pageSize.value
+  return rows.value.slice(start, start + pageSize.value)
 })
-const rangeStart = computed(() => (rows.value.length ? (page.value - 1) * pageSize + 1 : 0))
-const rangeEnd = computed(() => Math.min(page.value * pageSize, rows.value.length))
+const range = computed(() => pageRange(page.value, pageSize.value, rows.value.length))
+const rangeStart = computed(() => range.value.start)
+const rangeEnd = computed(() => range.value.end)
 
 watch([keyword, statusFilter], () => {
   page.value = 1
@@ -77,6 +79,11 @@ watch([keyword, statusFilter], () => {
 watch(pageCount, (count) => {
   if (page.value > count) page.value = count
 })
+
+function changePageSize(size: number) {
+  pageSize.value = size
+  page.value = 1
+}
 
 const columns = computed<DataTableColumns<Order>>(() => [
   {
@@ -157,27 +164,29 @@ function updateFormField(key: string, value: string | null) {
         <h1>{{ orderMeta.title }}</h1>
         <span>{{ orderMeta.desc }}</span>
       </div>
-      <NSpace :size="9">
-        <NButton @click="resetRows">
-          <template #icon><RefreshCcw :size="16" /></template>
-          刷新
-        </NButton>
-        <NButton type="primary" @click="openCreate">
-          <template #icon><Plus :size="17" /></template>
-          {{ orderMeta.action }}
-        </NButton>
-      </NSpace>
     </section>
 
     <StatCards :items="orderMeta.stats" :icons="statIcons" variant="business" />
 
-    <section class="order-table-panel panel">
-      <div class="order-table-head">
-        <div>
-          <h2>{{ orderMeta.tableTitle }}</h2>
-          <p>共 {{ rows.length }} 条演示数据</p>
+    <section class="order-table-panel list-table-panel panel">
+      <div class="order-table-head order-toolbar list-toolbar">
+        <div class="list-toolbar-main">
+          <div>
+            <h2>{{ orderMeta.tableTitle }}</h2>
+            <p>共 {{ rows.length }} 条演示数据</p>
+          </div>
+          <NSpace class="list-actions" :size="9">
+            <NButton @click="resetRows">
+              <template #icon><RefreshCcw :size="16" /></template>
+              刷新
+            </NButton>
+            <NButton type="primary" @click="openCreate">
+              <template #icon><Plus :size="17" /></template>
+              {{ orderMeta.action }}
+            </NButton>
+          </NSpace>
         </div>
-        <NSpace class="order-filters" :size="8" wrap>
+        <NSpace class="order-filters list-filters" :size="8" wrap align="center">
           <NInput v-model:value="keyword" clearable placeholder="输入关键词搜索">
             <template #prefix><Search :size="16" /></template>
           </NInput>
@@ -185,8 +194,9 @@ function updateFormField(key: string, value: string | null) {
             v-model:value="statusFilter"
             aria-label="状态筛选"
             :options="statusSelectOptions"
+            style="width: 130px"
           />
-          <NButton @click="exportRows">
+          <NButton secondary @click="exportRows">
             <template #icon><ArrowDownToLine :size="16" /></template>
             导出
           </NButton>
@@ -205,10 +215,15 @@ function updateFormField(key: string, value: string | null) {
         />
       </div>
 
-      <div class="order-pagination">
-        <span>显示 {{ rangeStart }} - {{ rangeEnd }} 条，共 {{ rows.length }} 条</span>
-        <NPagination v-model:page="page" :page-count="pageCount" />
-      </div>
+      <ListPagination
+        :page="page"
+        :page-size="pageSize"
+        :item-count="rows.length"
+        :range-start="rangeStart"
+        :range-end="rangeEnd"
+        @update:page="page = $event"
+        @update:page-size="changePageSize"
+      />
     </section>
 
     <NModal v-model:show="modal" :mask-closable="false">

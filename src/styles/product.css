@@ -1,1 +1,18 @@
-.business-status.已上架{background:#e9f7ef;color:#29985f}.business-status.已下架{background:#f1f2f4;color:#7a8290}.product-thumb{width:44px;height:44px;object-fit:cover;border-radius:9px;display:block}.business-table td:has(.product-thumb){padding-block:6px}
+.business-status.已上架 {
+  /* kept for legacy class names; semantic StatusTag tones take precedence when present */
+  background: var(--app-success-soft);
+  color: var(--app-success);
+}
+
+.business-status.已下架 {
+  background: var(--app-hover);
+  color: var(--app-text-muted);
+}
+
+.product-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 9px;
+  display: block;
+}

@@ -1,15 +1,32 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref } from 'vue'
 import {
   Ban,
   KeyRound,
   Plus,
   RefreshCcw,
+  Search,
   ShieldCheck,
   Trash2,
   UsersRound,
-  X,
 } from 'lucide-vue-next'
+import {
+  NButton,
+  NCard,
+  NDataTable,
+  NDatePicker,
+  NForm,
+  NFormItem,
+  NInput,
+  NModal,
+  NPopconfirm,
+  NSelect,
+  NSpace,
+  NTag,
+  useMessage,
+  type DataTableColumns,
+} from 'naive-ui'
+import ListPagination from '../../components/ListPagination.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import {
   addUserRole,
@@ -20,18 +37,19 @@ import {
   fetchUsers,
   removeUserRole,
 } from '../../api/users'
-import { useToastStore } from '../../stores/toast'
 import type { CreateUserRequest, UserProfile, UserRole, UserStatus } from '../../types'
+import { DEFAULT_PAGE_SIZE, pageRange } from '../../utils/pagination'
+import { ROLE_LABELS } from '../../utils/roles'
 
-const toast = useToastStore()
+const message = useMessage()
 const rows = ref<UserProfile[]>([])
 const loading = ref(false)
 const keyword = ref('')
 const status = ref<'' | UserStatus>('')
-const createdFrom = ref('')
-const createdTo = ref('')
+const createdFrom = ref<string | null>(null)
+const createdTo = ref<string | null>(null)
 const pageNum = ref(1)
-const pageSize = 20
+const pageSize = ref(DEFAULT_PAGE_SIZE)
 const total = ref(0)
 const pages = ref(0)
 const createOpen = ref(false)
@@ -55,14 +73,17 @@ const statusLabels: Record<UserStatus, string> = {
   BANNED: '已封禁',
   DELETED: '已删除',
 }
-const roleLabels: Record<UserRole, string> = {
-  GUEST: '访客',
-  MEMBER: '会员',
-  COMPANION: '陪玩师',
-  CUSTOMER_SERVICE: '客服',
-  ASSESSOR: '考核员',
-  ADMIN: '管理员',
-}
+const roleLabels = ROLE_LABELS
+const roleSelectOptions = computed(() =>
+  roleOptions.map((role) => ({ label: roleLabels[role], value: role })),
+)
+const statusSelectOptions = [
+  { label: '全部状态', value: '' },
+  { label: '正常', value: 'ACTIVE' },
+  { label: '已停用', value: 'DISABLED' },
+  { label: '已封禁', value: 'BANNED' },
+  { label: '已删除', value: 'DELETED' },
+]
 const form = reactive<CreateUserRequest>({
   phone: '',
   email: '',
@@ -70,10 +91,12 @@ const form = reactive<CreateUserRequest>({
   nickname: '',
   initialRole: 'MEMBER',
 })
-const rangeStart = computed(() => (total.value ? (pageNum.value - 1) * pageSize + 1 : 0))
-const rangeEnd = computed(() => Math.min(pageNum.value * pageSize, total.value))
+const range = computed(() => pageRange(pageNum.value, pageSize.value, total.value))
+const rangeStart = computed(() => range.value.start)
+const rangeEnd = computed(() => range.value.end)
+const activeCount = computed(() => rows.value.filter((item) => item.status === 'ACTIVE').length)
 
-function toIsoDateTime(value: string): string | undefined {
+function toIsoDateTime(value: string | null): string | undefined {
   if (!value) return undefined
   return value.length === 16 ? `${value}:00` : value
 }
@@ -83,7 +106,7 @@ async function loadUsers() {
   try {
     const result = await fetchUsers({
       pageNum: pageNum.value,
-      pageSize,
+      pageSize: pageSize.value,
       keyword: keyword.value.trim() || undefined,
       status: status.value || undefined,
       createdFrom: toIsoDateTime(createdFrom.value),
@@ -93,7 +116,7 @@ async function loadUsers() {
     total.value = result.total
     pages.value = result.pages
   } catch (error) {
-    toast.notify(error instanceof Error ? error.message : '用户列表加载失败')
+    message.error(error instanceof Error ? error.message : '用户列表加载失败')
   } finally {
     loading.value = false
   }
@@ -107,8 +130,8 @@ async function applyFilters() {
 async function resetFilters() {
   keyword.value = ''
   status.value = ''
-  createdFrom.value = ''
-  createdTo.value = ''
+  createdFrom.value = null
+  createdTo.value = null
   pageNum.value = 1
   await loadUsers()
 }
@@ -118,38 +141,39 @@ function resetForm() {
 }
 
 async function submitCreate() {
-  if (!form.phone?.trim() && !form.email?.trim()) return toast.notify('手机号和邮箱至少填写一项')
+  if (!form.phone?.trim() && !form.email?.trim()) {
+    message.warning('手机号和邮箱至少填写一项')
+    return
+  }
   try {
     await createUser({ ...form })
     createOpen.value = false
     resetForm()
-    toast.notify('用户创建成功')
+    message.success('用户创建成功')
     pageNum.value = 1
     await loadUsers()
   } catch (error) {
-    toast.notify(error instanceof Error ? error.message : '用户创建失败')
+    message.error(error instanceof Error ? error.message : '用户创建失败')
   }
 }
 
 async function handleDelete(user: UserProfile) {
-  if (!window.confirm(`确认删除用户“${user.nickname || user.userId}”吗？`)) return
   try {
     await deleteUser(user.userId)
-    toast.notify('用户已删除')
+    message.success('用户已删除')
     await loadUsers()
   } catch (error) {
-    toast.notify(error instanceof Error ? error.message : '删除失败')
+    message.error(error instanceof Error ? error.message : '删除失败')
   }
 }
 
 async function handleBan(user: UserProfile) {
-  if (!window.confirm(`确认封禁用户“${user.nickname || user.userId}”吗？`)) return
   try {
     await banUser(user.userId)
-    toast.notify('用户已封禁')
+    message.success('用户已封禁')
     await loadUsers()
   } catch (error) {
-    toast.notify(error instanceof Error ? error.message : '封禁失败')
+    message.error(error instanceof Error ? error.message : '封禁失败')
   }
 }
 
@@ -162,11 +186,11 @@ async function addRole() {
   if (!selected.value || selected.value.roles.includes(roleToAdd.value)) return
   try {
     await addUserRole(selected.value.userId, roleToAdd.value)
-    toast.notify('角色已分配')
+    message.success('角色已分配')
     rolesOpen.value = false
     await loadUsers()
   } catch (error) {
-    toast.notify(error instanceof Error ? error.message : '角色分配失败')
+    message.error(error instanceof Error ? error.message : '角色分配失败')
   }
 }
 
@@ -174,11 +198,11 @@ async function removeRole(role: UserRole) {
   if (!selected.value) return
   try {
     await removeUserRole(selected.value.userId, role)
-    toast.notify('角色已移除')
+    message.success('角色已移除')
     rolesOpen.value = false
     await loadUsers()
   } catch (error) {
-    toast.notify(error instanceof Error ? error.message : '角色移除失败')
+    message.error(error instanceof Error ? error.message : '角色移除失败')
   }
 }
 
@@ -188,9 +212,137 @@ async function showPermissions(user: UserProfile) {
     permissions.value = await fetchUserPermissions(user.userId)
     permissionsOpen.value = true
   } catch (error) {
-    toast.notify(error instanceof Error ? error.message : '权限加载失败')
+    message.error(error instanceof Error ? error.message : '权限加载失败')
   }
 }
+
+async function changePage(page: number) {
+  pageNum.value = page
+  await loadUsers()
+}
+
+async function changePageSize(size: number) {
+  pageSize.value = size
+  pageNum.value = 1
+  await loadUsers()
+}
+
+const columns = computed<DataTableColumns<UserProfile>>(() => [
+  {
+    title: '用户ID',
+    key: 'userId',
+    width: 100,
+    render: (row) => h('span', { class: 'order-identifier' }, `#${row.userId}`),
+  },
+  {
+    title: '用户',
+    key: 'nickname',
+    width: 140,
+    render: (row) => h('strong', { class: 'order-member' }, row.nickname || '未设置昵称'),
+  },
+  {
+    title: '联系方式',
+    key: 'contact',
+    width: 200,
+    render: (row) =>
+      h('div', [
+        h('span', row.phone || '-'),
+        h('small', { class: 'cell-sub' }, row.email || '-'),
+      ]),
+  },
+  {
+    title: '角色',
+    key: 'roles',
+    width: 180,
+    render: (row) =>
+      h(
+        'div',
+        { class: 'app-form-roles' },
+        row.roles.map((role) => h(NTag, { size: 'small', type: 'info', bordered: false }, () => roleLabels[role])),
+      ),
+  },
+  {
+    title: '会员等级',
+    key: 'membership',
+    width: 110,
+    render: (row) => row.membershipTierCode || row.membershipTierLevel || '-',
+  },
+  {
+    title: '状态',
+    key: 'status',
+    width: 100,
+    render: (row) => h(StatusTag, { status: statusLabels[row.status], variant: 'business' }),
+  },
+  {
+    title: '操作',
+    key: 'actions',
+    width: 160,
+    fixed: 'right',
+    render: (row) =>
+      h(NSpace, { size: 2, wrap: false }, () => [
+        h(
+          NButton,
+          {
+            quaternary: true,
+            circle: true,
+            size: 'small',
+            title: '角色管理',
+            onClick: () => openRoles(row),
+          },
+          { default: () => h(ShieldCheck, { size: 15 }) },
+        ),
+        h(
+          NButton,
+          {
+            quaternary: true,
+            circle: true,
+            size: 'small',
+            title: '查看权限',
+            onClick: () => showPermissions(row),
+          },
+          { default: () => h(KeyRound, { size: 15 }) },
+        ),
+        h(
+          NPopconfirm,
+          { onPositiveClick: () => handleBan(row) },
+          {
+            trigger: () =>
+              h(
+                NButton,
+                {
+                  quaternary: true,
+                  circle: true,
+                  size: 'small',
+                  title: '封禁',
+                  type: 'warning',
+                },
+                { default: () => h(Ban, { size: 15 }) },
+              ),
+            default: () => `确认封禁用户“${row.nickname || row.userId}”吗？`,
+          },
+        ),
+        h(
+          NPopconfirm,
+          { onPositiveClick: () => handleDelete(row) },
+          {
+            trigger: () =>
+              h(
+                NButton,
+                {
+                  quaternary: true,
+                  circle: true,
+                  size: 'small',
+                  title: '删除',
+                  type: 'error',
+                },
+                { default: () => h(Trash2, { size: 15 }) },
+              ),
+            default: () => `确认删除用户“${row.nickname || row.userId}”吗？`,
+          },
+        ),
+      ]),
+  },
+])
 
 onMounted(loadUsers)
 </script>
@@ -203,13 +355,6 @@ onMounted(loadUsers)
         <h1>用户管理</h1>
         <span>管理系统用户、账号状态、角色与权限</span>
       </div>
-      <div>
-        <button type="button" class="outline-action" :disabled="loading" @click="loadUsers">
-          <RefreshCcw :size="16" />刷新</button
-        ><button type="button" class="primary" @click="createOpen = true">
-          <Plus :size="17" />新增用户
-        </button>
-      </div>
     </section>
 
     <section class="business-stats user-summary">
@@ -217,242 +362,223 @@ onMounted(loadUsers)
         <i class="tone-0"><UsersRound /></i>
         <div>
           <p>用户总数</p>
-          <strong>{{ total }}</strong
-          ><small>来自服务器实时数据</small>
+          <strong>{{ total }}</strong>
+          <small>来自服务器实时数据</small>
         </div>
       </article>
       <article>
         <i class="tone-1"><ShieldCheck /></i>
         <div>
           <p>当前页正常用户</p>
-          <strong>{{ rows.filter((item) => item.status === 'ACTIVE').length }}</strong
-          ><small>当前第 {{ pageNum }} 页</small>
+          <strong>{{ activeCount }}</strong>
+          <small>当前第 {{ pageNum }} 页</small>
         </div>
       </article>
     </section>
 
-    <section class="business-table panel">
-      <div class="business-table-head user-table-head">
-        <div>
-          <h2>用户列表</h2>
-          <p>共 {{ total }} 个系统用户</p>
+    <section class="list-table-panel panel">
+      <div class="list-toolbar">
+        <div class="list-toolbar-main">
+          <div>
+            <h2>用户列表</h2>
+            <p>共 {{ total }} 个系统用户</p>
+          </div>
+          <NSpace class="list-actions" :size="9">
+            <NButton :loading="loading" @click="loadUsers">
+              <template #icon><RefreshCcw :size="16" /></template>
+              刷新
+            </NButton>
+            <NButton type="primary" @click="createOpen = true">
+              <template #icon><Plus :size="17" /></template>
+              新增用户
+            </NButton>
+          </NSpace>
         </div>
-        <div class="business-filters user-filters">
-          <label class="user-keyword-filter"
-            ><input
-              v-model="keyword"
-              aria-label="用户关键词"
-              placeholder="搜索昵称、手机号或邮箱"
-              @keyup.enter="applyFilters" /></label
-          ><select v-model="status" aria-label="账号状态">
-            <option value="">全部状态</option>
-            <option value="ACTIVE">正常</option>
-            <option value="DISABLED">已停用</option>
-            <option value="BANNED">已封禁</option>
-            <option value="DELETED">已删除</option>
-          </select>
-          <label class="user-date-filter"
-            ><span>创建时间起</span
-            ><input v-model="createdFrom" type="datetime-local" aria-label="创建时间开始" /></label
-          ><label class="user-date-filter"
-            ><span>创建时间止</span
-            ><input v-model="createdTo" type="datetime-local" aria-label="创建时间结束" /></label
-          ><button
-            type="button"
-            class="user-filter-submit"
+        <NSpace class="list-filters" :size="8" wrap align="center">
+          <NInput
+            v-model:value="keyword"
+            clearable
+            aria-label="用户关键词"
+            placeholder="搜索昵称、手机号或邮箱"
+            style="width: 220px"
+            @keyup.enter="applyFilters"
+          >
+            <template #prefix><Search :size="16" /></template>
+          </NInput>
+          <NSelect
+            v-model:value="status"
+            aria-label="账号状态"
+            :options="statusSelectOptions"
+            style="width: 130px"
+          />
+          <NDatePicker
+            v-model:formatted-value="createdFrom"
+            type="datetime"
+            clearable
+            value-format="yyyy-MM-dd'T'HH:mm"
+            aria-label="创建时间开始"
+            placeholder="创建时间起"
+            style="width: 200px"
+          />
+          <NDatePicker
+            v-model:formatted-value="createdTo"
+            type="datetime"
+            clearable
+            value-format="yyyy-MM-dd'T'HH:mm"
+            aria-label="创建时间结束"
+            placeholder="创建时间止"
+            style="width: 200px"
+          />
+          <NButton
+            type="primary"
             data-testid="apply-user-filters"
-            :disabled="loading"
+            :loading="loading"
             @click="applyFilters"
           >
-            查询</button
-          ><button type="button" :disabled="loading" @click="resetFilters">重置</button>
-        </div>
+            查询
+          </NButton>
+          <NButton :disabled="loading" @click="resetFilters">重置</NButton>
+        </NSpace>
       </div>
-      <div class="business-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>用户ID</th>
-              <th>用户</th>
-              <th>联系方式</th>
-              <th>角色</th>
-              <th>会员等级</th>
-              <th>状态</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="loading">
-              <td colspan="7" class="empty">正在加载用户数据...</td>
-            </tr>
-            <tr v-for="user in rows" v-else :key="user.userId">
-              <td class="identifier">#{{ user.userId }}</td>
-              <td class="strong">{{ user.nickname || '未设置昵称' }}</td>
-              <td>
-                <span>{{ user.phone || '-' }}</span
-                ><small class="cell-sub">{{ user.email || '-' }}</small>
-              </td>
-              <td>
-                <div class="role-list">
-                  <span v-for="role in user.roles" :key="role">{{ roleLabels[role] }}</span>
-                </div>
-              </td>
-              <td>{{ user.membershipTierCode || user.membershipTierLevel || '-' }}</td>
-              <td><StatusTag :status="statusLabels[user.status]" variant="business" /></td>
-              <td>
-                <div class="row-actions">
-                  <button type="button" title="角色管理" @click="openRoles(user)">
-                    <ShieldCheck :size="15" /></button
-                  ><button type="button" title="查看权限" @click="showPermissions(user)">
-                    <KeyRound :size="15" /></button
-                  ><button type="button" title="封禁" @click="handleBan(user)">
-                    <Ban :size="15" /></button
-                  ><button
-                    type="button"
-                    title="删除"
-                    class="danger-action"
-                    @click="handleDelete(user)"
-                  >
-                    <Trash2 :size="15" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="!loading && !rows.length">
-              <td colspan="7" class="empty">没有找到符合条件的用户</td>
-            </tr>
-          </tbody>
-        </table>
+
+      <div class="list-table-host">
+        <NDataTable
+          :columns="columns"
+          :data="rows"
+          :loading="loading"
+          :pagination="false"
+          :row-key="(row: UserProfile) => row.userId"
+          :scroll-x="1100"
+          :single-line="false"
+          striped
+        />
       </div>
-      <div class="pagination">
-        <span>显示 {{ rangeStart }} - {{ rangeEnd }} 条，共 {{ total }} 条</span>
-        <div>
-          <button
-            type="button"
-            :disabled="pageNum <= 1 || loading"
-            @click="
-              pageNum--;
-              loadUsers()
-            "
-          >
-            ‹</button
-          ><button type="button" class="current">{{ pageNum }}</button
-          ><button
-            type="button"
-            :disabled="pageNum >= pages || loading"
-            @click="
-              pageNum++;
-              loadUsers()
-            "
-          >
-            ›
-          </button>
-        </div>
-      </div>
+
+      <ListPagination
+        :page="pageNum"
+        :page-size="pageSize"
+        :item-count="total"
+        :range-start="rangeStart"
+        :range-end="rangeEnd"
+        :disabled="loading"
+        @update:page="changePage"
+        @update:page-size="changePageSize"
+      />
     </section>
 
-    <div v-if="createOpen" class="modal-backdrop">
-      <form class="modal" @submit.prevent="submitCreate">
-        <div class="modal-head">
-          <div>
-            <h2>新增用户</h2>
-            <p>手机号与邮箱至少填写一项</p>
-          </div>
-          <button type="button" class="icon-btn" @click="createOpen = false">
-            <X :size="19" />
-          </button>
-        </div>
-        <div class="business-form dynamic-form">
-          <label><span>昵称</span><input v-model="form.nickname" placeholder="请输入昵称" /></label
-          ><label
-            ><span>手机号</span
-            ><input v-model="form.phone" type="tel" placeholder="请输入手机号" /></label
-          ><label
-            ><span>邮箱</span
-            ><input v-model="form.email" type="email" placeholder="请输入邮箱" /></label
-          ><label
-            ><span>初始密码</span
-            ><input
-              v-model="form.password"
+    <NModal v-model:show="createOpen" :mask-closable="false">
+      <NCard
+        class="app-form-modal"
+        title="新增用户"
+        :bordered="false"
+        size="huge"
+        closable
+        role="dialog"
+        aria-modal="true"
+        @close="createOpen = false"
+      >
+        <p class="app-form-subtitle">手机号与邮箱至少填写一项</p>
+        <NForm class="app-form-grid" label-placement="top">
+          <NFormItem label="昵称">
+            <NInput v-model:value="form.nickname" placeholder="请输入昵称" />
+          </NFormItem>
+          <NFormItem label="手机号">
+            <NInput v-model:value="form.phone" placeholder="请输入手机号" />
+          </NFormItem>
+          <NFormItem label="邮箱">
+            <NInput v-model:value="form.email" placeholder="请输入邮箱" />
+          </NFormItem>
+          <NFormItem label="初始密码">
+            <NInput
+              v-model:value="form.password"
               type="password"
+              show-password-on="click"
               autocomplete="new-password"
-              placeholder="留空则仅支持验证码登录" /></label
-          ><label
-            ><span>初始角色</span
-            ><select v-model="form.initialRole">
-              <option v-for="role in roleOptions" :key="role" :value="role">
-                {{ roleLabels[role] }}
-              </option>
-            </select></label
-          >
-        </div>
-        <div class="modal-foot">
-          <button type="button" class="secondary" @click="createOpen = false">取消</button
-          ><button type="submit" class="primary">确认创建</button>
-        </div>
-      </form>
-    </div>
+              placeholder="留空则仅支持验证码登录"
+            />
+          </NFormItem>
+          <NFormItem label="初始角色">
+            <NSelect v-model:value="form.initialRole" :options="roleSelectOptions" />
+          </NFormItem>
+        </NForm>
+        <template #footer>
+          <NSpace justify="end">
+            <NButton @click="createOpen = false">取消</NButton>
+            <NButton type="primary" @click="submitCreate">确认创建</NButton>
+          </NSpace>
+        </template>
+      </NCard>
+    </NModal>
 
-    <div v-if="rolesOpen && selected" class="modal-backdrop">
-      <div class="modal compact-modal">
-        <div class="modal-head">
-          <div>
-            <h2>角色管理</h2>
-            <p>{{ selected.nickname || `用户 #${selected.userId}` }}</p>
-          </div>
-          <button type="button" class="icon-btn" @click="rolesOpen = false">
-            <X :size="19" />
-          </button>
-        </div>
-        <div class="business-form">
-          <div class="assigned-roles">
-            <button
-              v-for="role in selected.roles"
-              :key="role"
-              type="button"
-              @click="removeRole(role)"
-            >
-              {{ roleLabels[role] }} ×
-            </button>
-          </div>
-          <label
-            ><span>新增角色</span
-            ><select v-model="roleToAdd">
-              <option v-for="role in roleOptions" :key="role" :value="role">
-                {{ roleLabels[role] }}
-              </option>
-            </select></label
-          >
-        </div>
-        <div class="modal-foot">
-          <button type="button" class="secondary" @click="rolesOpen = false">关闭</button
-          ><button type="button" class="primary" @click="addRole">分配角色</button>
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-if="permissionsOpen && selected"
-      class="modal-backdrop"
+    <NModal
+      :show="rolesOpen && !!selected"
+      :mask-closable="false"
+      @update:show="(show) => (rolesOpen = show)"
     >
-      <div class="modal compact-modal">
-        <div class="modal-head">
-          <div>
-            <h2>权限列表</h2>
-            <p>{{ selected.nickname || `用户 #${selected.userId}` }}</p>
-          </div>
-          <button type="button" class="icon-btn" @click="permissionsOpen = false">
-            <X :size="19" />
-          </button>
+      <NCard
+        v-if="selected"
+        class="app-form-modal compact"
+        title="角色管理"
+        :bordered="false"
+        size="huge"
+        closable
+        role="dialog"
+        aria-modal="true"
+        @close="rolesOpen = false"
+      >
+        <p class="app-form-subtitle">{{ selected.nickname || `用户 #${selected.userId}` }}</p>
+        <div class="app-form-roles">
+          <NTag
+            v-for="role in selected.roles"
+            :key="role"
+            closable
+            type="info"
+            @close="removeRole(role)"
+          >
+            {{ roleLabels[role] }}
+          </NTag>
         </div>
-        <div class="permission-list">
+        <NForm label-placement="top">
+          <NFormItem label="新增角色">
+            <NSelect v-model:value="roleToAdd" :options="roleSelectOptions" />
+          </NFormItem>
+        </NForm>
+        <template #footer>
+          <NSpace justify="end">
+            <NButton @click="rolesOpen = false">关闭</NButton>
+            <NButton type="primary" @click="addRole">分配角色</NButton>
+          </NSpace>
+        </template>
+      </NCard>
+    </NModal>
+
+    <NModal
+      :show="permissionsOpen && !!selected"
+      :mask-closable="false"
+      @update:show="(show) => (permissionsOpen = show)"
+    >
+      <NCard
+        v-if="selected"
+        class="app-form-modal compact"
+        title="权限列表"
+        :bordered="false"
+        size="huge"
+        closable
+        role="dialog"
+        aria-modal="true"
+        @close="permissionsOpen = false"
+      >
+        <p class="app-form-subtitle">{{ selected.nickname || `用户 #${selected.userId}` }}</p>
+        <div class="app-permission-list">
           <code v-for="item in permissions" :key="item">{{ item }}</code>
           <p v-if="!permissions.length">当前没有已解析权限</p>
         </div>
-        <div class="modal-foot">
-          <button type="button" class="primary" @click="permissionsOpen = false">知道了</button>
-        </div>
-      </div>
-    </div>
+        <template #footer>
+          <NSpace justify="end">
+            <NButton type="primary" @click="permissionsOpen = false">知道了</NButton>
+          </NSpace>
+        </template>
+      </NCard>
+    </NModal>
   </div>
 </template>

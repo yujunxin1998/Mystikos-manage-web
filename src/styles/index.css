@@ -9,3 +9,10 @@
 .app {
   min-width: 0;
 }
+
+/* 主题根节点承载 --app-*；布局兼容变量由 .app 映射消费。 */
+.theme-root {
+  min-height: 100%;
+  color: var(--app-text);
+  background: var(--app-page);
+}

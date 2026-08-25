@@ -41,6 +41,7 @@ describe('OrdersView', () => {
   it('renders a Naive UI data table and filters its rows by keyword', async () => {
     const wrapper = mountOrdersView()
 
+    expect(wrapper.find('.order-toolbar').exists()).toBe(true)
     expect(wrapper.find('.n-data-table').exists()).toBe(true)
     expect(wrapper.find('[aria-label="状态筛选"]').exists()).toBe(true)
     const keyword = wrapper.get('input[placeholder="输入关键词搜索"]')
