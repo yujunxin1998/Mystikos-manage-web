@@ -2,6 +2,7 @@ import type { GlobalThemeOverrides } from 'naive-ui'
 import {
   createThemeCssVars,
   darkThemeTokens,
+  layoutTokens,
   lightThemeTokens,
   type ThemeTokens,
 } from './tokens'
@@ -31,8 +32,8 @@ export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverr
       textColor2: tokens.textMuted,
       textColor3: tokens.textMuted,
       hoverColor: tokens.hover,
-      borderRadius: '9px',
-      borderRadiusSmall: '7px',
+      borderRadius: layoutTokens.radiusMd,
+      borderRadiusSmall: layoutTokens.radiusSm,
       fontFamily,
       successColor: tokens.success,
       warningColor: tokens.warning,
@@ -40,10 +41,10 @@ export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverr
       infoColor: tokens.info,
     },
     Button: {
-      heightMedium: '40px',
-      heightSmall: '32px',
-      borderRadiusMedium: '9px',
-      borderRadiusSmall: '8px',
+      heightMedium: layoutTokens.controlHeight,
+      heightSmall: layoutTokens.controlHeightSm,
+      borderRadiusMedium: layoutTokens.radiusMd,
+      borderRadiusSmall: layoutTokens.radiusSm,
       textColor: tokens.text,
       textColorHover: tokens.primary,
       textColorPressed: tokens.primaryPressed,
@@ -76,8 +77,8 @@ export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverr
       colorQuaternary: 'transparent',
     },
     Input: {
-      heightMedium: '38px',
-      borderRadius: '8px',
+      heightMedium: layoutTokens.controlHeight,
+      borderRadius: layoutTokens.radiusSm,
       color: tokens.surface,
       colorFocus: tokens.surface,
       border: `1px solid ${tokens.border}`,
@@ -91,8 +92,8 @@ export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverr
     Select: {
       peers: {
         InternalSelection: {
-          heightMedium: '38px',
-          borderRadius: '8px',
+          heightMedium: layoutTokens.controlHeight,
+          borderRadius: layoutTokens.radiusSm,
           color: tokens.surface,
           colorActive: tokens.surface,
           border: `1px solid ${tokens.border}`,
@@ -113,7 +114,7 @@ export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverr
       thColor: tokens.surfaceMuted,
       thTextColor: tokens.textMuted,
       thFontWeight: '500',
-      fontSizeMedium: '13px',
+      fontSizeMedium: layoutTokens.fontSm,
       tdColor: tokens.surface,
       tdColorHover: tokens.tableHover,
       tdColorStriped: tokens.tableStriped,
@@ -122,25 +123,25 @@ export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverr
       tdPaddingMedium: '14px 16px',
     },
     Card: {
-      borderRadius: '13px',
+      borderRadius: layoutTokens.radiusLg,
       color: tokens.surfaceRaised,
       borderColor: tokens.border,
       titleTextColor: tokens.text,
       textColor: tokens.text,
-      paddingMedium: '20px',
+      paddingMedium: layoutTokens.space5,
       titleFontSizeMedium: '15px',
       boxShadow: tokens.shadow,
     },
     Dialog: {
-      borderRadius: '13px',
+      borderRadius: layoutTokens.radiusLg,
       color: tokens.surfaceRaised,
       titleTextColor: tokens.text,
       textColor: tokens.text,
       padding: '20px 24px',
     },
     Pagination: {
-      itemSizeMedium: '32px',
-      itemBorderRadius: '8px',
+      itemSizeMedium: layoutTokens.controlHeightSm,
+      itemBorderRadius: layoutTokens.radiusSm,
       itemTextColor: tokens.textMuted,
       itemTextColorHover: tokens.primary,
       itemTextColorActive: '#ffffff',
@@ -158,7 +159,7 @@ export function createNaiveThemeOverrides(tokens: ThemeTokens): GlobalThemeOverr
       padding: '14px 16px',
     },
     Message: {
-      borderRadius: '10px',
+      borderRadius: layoutTokens.radiusMd,
       padding: '12px 16px',
     },
   }
@@ -170,5 +171,5 @@ export const darkNaiveThemeOverrides = createNaiveThemeOverrides(darkThemeTokens
 /** @deprecated 使用 lightNaiveThemeOverrides / darkNaiveThemeOverrides */
 export const mystikosThemeOverrides = lightNaiveThemeOverrides
 
-export { createThemeCssVars, darkThemeTokens, lightThemeTokens }
+export { createThemeCssVars, darkThemeTokens, layoutTokens, lightThemeTokens }
 export type { ThemeTokens }

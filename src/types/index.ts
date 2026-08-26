@@ -1,5 +1,5 @@
 export type { RowRecord, ColumnDef, StatItem, FormField, ModuleMeta } from './common'
-export type { Order, DashboardOrder } from './order'
+export type { Order, DashboardOrder, CreateCommerceOrderRequest } from './order'
 export type {
   Companion,
   CompanionPerformance,

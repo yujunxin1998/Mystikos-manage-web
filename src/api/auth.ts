@@ -19,7 +19,17 @@ export async function refreshAccessToken(refreshToken: string): Promise<AuthToke
   return unwrapApiResponse(data)
 }
 
-export async function logout(): Promise<void> {
-  const { data } = await http.post<ApiResponse<null>>('/api/v1/auth/logout')
+export async function logout(accessToken?: string): Promise<void> {
+  const { data } = await http.post<ApiResponse<null>>(
+    '/api/v1/auth/logout',
+    null,
+    accessToken
+      ? {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      : undefined,
+  )
   unwrapApiResponse(data)
 }

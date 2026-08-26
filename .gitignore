@@ -1,9 +1,9 @@
 node_modules/
 dist/
 .worktrees/
+.superpowers/
 
 .env*
 !.env.example
 
 *.log
-

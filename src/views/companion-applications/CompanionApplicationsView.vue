@@ -23,6 +23,7 @@ import {
   startCompanionAssessment,
 } from '../../api/companions'
 import ListPagination from '../../components/ListPagination.vue'
+import CopyableId from '../../components/CopyableId.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import { useAuthStore } from '../../stores/auth'
 import { useTodosStore } from '../../stores/todos'
@@ -203,8 +204,8 @@ const columns = computed<DataTableColumns<CompanionIdentityApplication>>(() => [
   {
     title: '申请ID',
     key: 'id',
-    width: 100,
-    render: (row) => h('span', { class: 'order-identifier' }, `#${row.id}`),
+    width: 148,
+    render: (row) => h(CopyableId, { value: row.id, prefix: '#', name: '申请ID' }),
   },
   {
     title: '申请人',
@@ -329,7 +330,6 @@ onMounted(loadApplications)
   <div class="business-page application-page">
     <section class="business-title">
       <div>
-        <p>COMPANION APPLY</p>
         <h1>陪玩申请</h1>
         <span>审核新陪玩身份申请，待处理项优先展示</span>
       </div>
@@ -415,7 +415,7 @@ onMounted(loadApplications)
           :loading="loading"
           :pagination="false"
           :row-key="(row: CompanionIdentityApplication) => row.id"
-          :scroll-x="1200"
+          :scroll-x="1260"
           :single-line="false"
           striped
         />

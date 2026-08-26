@@ -27,8 +27,10 @@ import {
   UsersRound,
 } from 'lucide-vue-next'
 import ListPagination from '../../components/ListPagination.vue'
+import CopyableId from '../../components/CopyableId.vue'
 import StatCards from '../../components/StatCards.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import { createCommerceOrder } from '../../api/commerce'
 import { useCrudList } from '../../composables/useCrudList'
 import { orderMeta, orderRows } from '../../mocks/orders'
 import type { Order } from '../../types'
@@ -38,6 +40,9 @@ const statIcons = [TrendingUp, UsersRound, Gamepad2, CircleDollarSign]
 const message = useMessage()
 const page = ref(1)
 const pageSize = ref(DEFAULT_PAGE_SIZE)
+const commerceModal = ref(false)
+const commerceLoading = ref(false)
+const shippingAddress = ref('')
 
 const {
   keyword,
@@ -48,7 +53,6 @@ const {
   statusOptions,
   rows,
   resetRows,
-  openCreate,
   openEdit,
   removeRow,
   submit,
@@ -85,13 +89,36 @@ function changePageSize(size: number) {
   page.value = 1
 }
 
+function openCommerceOrder() {
+  shippingAddress.value = ''
+  commerceModal.value = true
+}
+
+async function submitCommerceOrder() {
+  const address = shippingAddress.value.trim()
+  if (!address) {
+    message.warning('请输入收货地址')
+    return
+  }
+  commerceLoading.value = true
+  try {
+    const orderId = await createCommerceOrder({ shippingAddress: address })
+    commerceModal.value = false
+    message.success(`订单 #${orderId} 创建成功`)
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '商城订单创建失败')
+  } finally {
+    commerceLoading.value = false
+  }
+}
+
 const columns = computed<DataTableColumns<Order>>(() => [
   {
     title: '订单编号',
     key: 'id',
-    width: 180,
+    width: 200,
     fixed: 'left',
-    render: (row) => h('span', { class: 'order-identifier' }, row.id),
+    render: (row) => h(CopyableId, { value: row.id, name: '订单编号' }),
   },
   {
     title: '会员',
@@ -160,7 +187,6 @@ function updateFormField(key: string, value: string | null) {
   <div class="business-page order-page">
     <section class="business-title">
       <div>
-        <p>{{ orderMeta.code }}</p>
         <h1>{{ orderMeta.title }}</h1>
         <span>{{ orderMeta.desc }}</span>
       </div>
@@ -180,7 +206,7 @@ function updateFormField(key: string, value: string | null) {
               <template #icon><RefreshCcw :size="16" /></template>
               刷新
             </NButton>
-            <NButton type="primary" @click="openCreate">
+            <NButton type="primary" @click="openCommerceOrder">
               <template #icon><Plus :size="17" /></template>
               {{ orderMeta.action }}
             </NButton>
@@ -225,6 +251,41 @@ function updateFormField(key: string, value: string | null) {
         @update:page-size="changePageSize"
       />
     </section>
+
+    <NModal v-model:show="commerceModal" :mask-closable="false">
+      <NCard
+        class="order-form-modal"
+        title="创建商城订单"
+        :bordered="false"
+        size="huge"
+        role="dialog"
+        aria-modal="true"
+        closable
+        @close="commerceModal = false"
+      >
+        <p class="order-form-subtitle">根据当前登录账号的购物车创建订单</p>
+        <NForm label-placement="top">
+          <NFormItem label="收货地址" required>
+            <NInput
+              v-model:value="shippingAddress"
+              type="textarea"
+              :rows="3"
+              maxlength="255"
+              show-count
+              placeholder="请输入收货地址"
+            />
+          </NFormItem>
+        </NForm>
+        <template #footer>
+          <NSpace justify="end">
+            <NButton :disabled="commerceLoading" @click="commerceModal = false">取消</NButton>
+            <NButton type="primary" :loading="commerceLoading" @click="submitCommerceOrder">
+              确认下单
+            </NButton>
+          </NSpace>
+        </template>
+      </NCard>
+    </NModal>
 
     <NModal v-model:show="modal" :mask-closable="false">
       <NCard

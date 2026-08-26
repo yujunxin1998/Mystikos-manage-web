@@ -13,6 +13,12 @@ textarea {
   font-family: inherit;
 }
 
+body {
+  font-size: var(--app-font-md, 14px);
+  line-height: 1.5;
+}
+
+/* Type scale：xs 12 / sm 13 / md 14 / lg 16 / xl 24 / display 26 */
 .brand {
   font-family: 'Segoe UI', Arial, sans-serif;
   font-weight: 700;
@@ -21,13 +27,16 @@ textarea {
 
 .welcome h1,
 .business-title h1 {
+  font-size: var(--app-font-display, 26px);
   font-weight: 700;
   letter-spacing: -0.035em;
+  line-height: 1.25;
 }
 
 .panel h2,
 .list-toolbar h2,
 .order-toolbar h2 {
+  font-size: 15px;
   font-weight: 650;
   letter-spacing: -0.012em;
 }
@@ -41,6 +50,16 @@ textarea {
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   letter-spacing: -0.025em;
+}
+
+.stat-value strong {
+  font-size: var(--app-font-xl, 24px);
+}
+
+.business-stats strong,
+.chart-total strong,
+.donut strong {
+  font-size: 22px;
 }
 
 table {
@@ -57,6 +76,7 @@ td {
 }
 
 .sidebar nav button {
+  font-size: var(--app-font-sm, 13px);
   font-weight: 500;
 }
 
@@ -73,21 +93,19 @@ td {
   line-height: 1.6;
 }
 
-body {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
 .workspace,
 .crumb,
-.sidebar nav button,
 .primary,
 .secondary,
 .filter,
 .switch button,
 .text-btn,
-.profile-menu button {
-  font-size: 13px;
+.profile-menu button,
+.support b,
+.global-search input,
+.table-actions input,
+.login-head p {
+  font-size: var(--app-font-sm, 13px);
 }
 
 .nav-title,
@@ -117,67 +135,19 @@ body {
 .login-hint,
 .login-error,
 .login-foot {
-  font-size: 12px;
-}
-
-.support b,
-.global-search input,
-.table-actions input,
-.login-head p {
-  font-size: 13px;
+  font-size: var(--app-font-xs, 12px);
 }
 
 table,
 .login-field input,
 .login-channel button,
 .login-submit {
-  font-size: 14px;
-}
-
-.panel h2,
-.list-toolbar h2,
-.order-toolbar h2 {
-  font-size: 16px;
-}
-
-.welcome h1,
-.business-title h1 {
-  font-size: 28px;
-}
-
-.stat-value strong {
-  font-size: 25px;
-}
-
-.business-stats strong,
-.chart-total strong {
-  font-size: 22px;
-}
-
-.sidebar nav button {
-  height: 46px;
-}
-
-.global-search,
-.table-actions label {
-  height: 40px;
-}
-
-.filter {
-  min-height: 40px;
-}
-
-th {
-  height: 40px;
-}
-
-td {
-  height: 60px;
+  font-size: var(--app-font-md, 14px);
 }
 
 @media (max-width: 800px) {
   .welcome h1,
   .business-title h1 {
-    font-size: 24px;
+    font-size: var(--app-font-xl, 24px);
   }
 }

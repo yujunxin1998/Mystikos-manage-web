@@ -21,3 +21,7 @@ export interface DashboardOrder {
   status: string
   time: string
 }
+
+export interface CreateCommerceOrderRequest {
+  shippingAddress: string
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, h, onMounted, reactive, ref } from 'vue'
+import { computed, h, onMounted, reactive, ref, type VNode } from 'vue'
 import {
   Ban,
   KeyRound,
@@ -27,6 +27,7 @@ import {
   type DataTableColumns,
 } from 'naive-ui'
 import ListPagination from '../../components/ListPagination.vue'
+import CopyableId from '../../components/CopyableId.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import {
   addUserRole,
@@ -37,11 +38,25 @@ import {
   fetchUsers,
   removeUserRole,
 } from '../../api/users'
+import { useAuthStore } from '../../stores/auth'
 import type { CreateUserRequest, UserProfile, UserRole, UserStatus } from '../../types'
 import { DEFAULT_PAGE_SIZE, pageRange } from '../../utils/pagination'
 import { ROLE_LABELS } from '../../utils/roles'
 
 const message = useMessage()
+const authStore = useAuthStore()
+const canCreateUser = computed(() => authStore.can('user.create'))
+const canManageRoles = computed(() => authStore.can('user.role'))
+const canViewPermissions = computed(() => authStore.can('user.permission'))
+const canBanUser = computed(() => authStore.can('user.ban'))
+const canDeleteUser = computed(() => authStore.can('user.delete'))
+const hasRowActions = computed(
+  () =>
+    canManageRoles.value ||
+    canViewPermissions.value ||
+    canBanUser.value ||
+    canDeleteUser.value,
+)
 const rows = ref<UserProfile[]>([])
 const loading = ref(false)
 const keyword = ref('')
@@ -227,122 +242,152 @@ async function changePageSize(size: number) {
   await loadUsers()
 }
 
-const columns = computed<DataTableColumns<UserProfile>>(() => [
-  {
-    title: '用户ID',
-    key: 'userId',
-    width: 100,
-    render: (row) => h('span', { class: 'order-identifier' }, `#${row.userId}`),
-  },
-  {
-    title: '用户',
-    key: 'nickname',
-    width: 140,
-    render: (row) => h('strong', { class: 'order-member' }, row.nickname || '未设置昵称'),
-  },
-  {
-    title: '联系方式',
-    key: 'contact',
-    width: 200,
-    render: (row) =>
-      h('div', [
-        h('span', row.phone || '-'),
-        h('small', { class: 'cell-sub' }, row.email || '-'),
-      ]),
-  },
-  {
-    title: '角色',
-    key: 'roles',
-    width: 180,
-    render: (row) =>
-      h(
-        'div',
-        { class: 'app-form-roles' },
-        row.roles.map((role) => h(NTag, { size: 'small', type: 'info', bordered: false }, () => roleLabels[role])),
-      ),
-  },
-  {
-    title: '会员等级',
-    key: 'membership',
-    width: 110,
-    render: (row) => row.membershipTierCode || row.membershipTierLevel || '-',
-  },
-  {
-    title: '状态',
-    key: 'status',
-    width: 100,
-    render: (row) => h(StatusTag, { status: statusLabels[row.status], variant: 'business' }),
-  },
-  {
-    title: '操作',
-    key: 'actions',
-    width: 160,
-    fixed: 'right',
-    render: (row) =>
-      h(NSpace, { size: 2, wrap: false }, () => [
+const columns = computed<DataTableColumns<UserProfile>>(() => {
+  const cols: DataTableColumns<UserProfile> = [
+    {
+      title: '用户ID',
+      key: 'userId',
+      width: 148,
+      render: (row) => h(CopyableId, { value: row.userId, prefix: '#', name: '用户ID' }),
+    },
+    {
+      title: '用户',
+      key: 'nickname',
+      width: 140,
+      render: (row) => h('strong', { class: 'order-member' }, row.nickname || '未设置昵称'),
+    },
+    {
+      title: '联系方式',
+      key: 'contact',
+      width: 200,
+      render: (row) =>
+        h('div', [
+          h('span', row.phone || '-'),
+          h('small', { class: 'cell-sub' }, row.email || '-'),
+        ]),
+    },
+    {
+      title: '角色',
+      key: 'roles',
+      width: 180,
+      render: (row) =>
         h(
-          NButton,
-          {
-            quaternary: true,
-            circle: true,
-            size: 'small',
-            title: '角色管理',
-            onClick: () => openRoles(row),
-          },
-          { default: () => h(ShieldCheck, { size: 15 }) },
+          'div',
+          { class: 'app-form-roles' },
+          row.roles.map((role) => h(NTag, { size: 'small', type: 'info', bordered: false }, () => roleLabels[role])),
         ),
-        h(
-          NButton,
-          {
-            quaternary: true,
-            circle: true,
-            size: 'small',
-            title: '查看权限',
-            onClick: () => showPermissions(row),
-          },
-          { default: () => h(KeyRound, { size: 15 }) },
-        ),
-        h(
-          NPopconfirm,
-          { onPositiveClick: () => handleBan(row) },
-          {
-            trigger: () =>
+    },
+    {
+      title: '会员等级',
+      key: 'membership',
+      width: 110,
+      render: (row) => row.membershipTierCode || row.membershipTierLevel || '-',
+    },
+    {
+      title: '状态',
+      key: 'status',
+      width: 100,
+      render: (row) => h(StatusTag, { status: statusLabels[row.status], variant: 'business' }),
+    },
+  ]
+
+  if (hasRowActions.value) {
+    const actionCount =
+      Number(canManageRoles.value) +
+      Number(canViewPermissions.value) +
+      Number(canBanUser.value) +
+      Number(canDeleteUser.value)
+    cols.push({
+      title: '操作',
+      key: 'actions',
+      width: Math.max(88, actionCount * 36 + 16),
+      fixed: 'right',
+      render: (row) =>
+        h(NSpace, { size: 2, wrap: false }, () => {
+          const buttons: VNode[] = []
+          if (canManageRoles.value) {
+            buttons.push(
               h(
                 NButton,
                 {
                   quaternary: true,
                   circle: true,
                   size: 'small',
-                  title: '封禁',
-                  type: 'warning',
+                  title: '角色管理',
+                  onClick: () => openRoles(row),
                 },
-                { default: () => h(Ban, { size: 15 }) },
+                { default: () => h(ShieldCheck, { size: 15 }) },
               ),
-            default: () => `确认封禁用户“${row.nickname || row.userId}”吗？`,
-          },
-        ),
-        h(
-          NPopconfirm,
-          { onPositiveClick: () => handleDelete(row) },
-          {
-            trigger: () =>
+            )
+          }
+          if (canViewPermissions.value) {
+            buttons.push(
               h(
                 NButton,
                 {
                   quaternary: true,
                   circle: true,
                   size: 'small',
-                  title: '删除',
-                  type: 'error',
+                  title: '查看权限',
+                  onClick: () => showPermissions(row),
                 },
-                { default: () => h(Trash2, { size: 15 }) },
+                { default: () => h(KeyRound, { size: 15 }) },
               ),
-            default: () => `确认删除用户“${row.nickname || row.userId}”吗？`,
-          },
-        ),
-      ]),
-  },
-])
+            )
+          }
+          if (canBanUser.value) {
+            buttons.push(
+              h(
+                NPopconfirm,
+                { onPositiveClick: () => handleBan(row) },
+                {
+                  trigger: () =>
+                    h(
+                      NButton,
+                      {
+                        quaternary: true,
+                        circle: true,
+                        size: 'small',
+                        title: '封禁',
+                        type: 'warning',
+                      },
+                      { default: () => h(Ban, { size: 15 }) },
+                    ),
+                  default: () => `确认封禁用户“${row.nickname || row.userId}”吗？`,
+                },
+              ),
+            )
+          }
+          if (canDeleteUser.value) {
+            buttons.push(
+              h(
+                NPopconfirm,
+                { onPositiveClick: () => handleDelete(row) },
+                {
+                  trigger: () =>
+                    h(
+                      NButton,
+                      {
+                        quaternary: true,
+                        circle: true,
+                        size: 'small',
+                        title: '删除',
+                        type: 'error',
+                      },
+                      { default: () => h(Trash2, { size: 15 }) },
+                    ),
+                  default: () => `确认删除用户“${row.nickname || row.userId}”吗？`,
+                },
+              ),
+            )
+          }
+          return buttons
+        }),
+    })
+  }
+
+  return cols
+})
 
 onMounted(loadUsers)
 </script>
@@ -351,7 +396,6 @@ onMounted(loadUsers)
   <div class="business-page user-page">
     <section class="business-title">
       <div>
-        <p>USER MANAGEMENT</p>
         <h1>用户管理</h1>
         <span>管理系统用户、账号状态、角色与权限</span>
       </div>
@@ -388,7 +432,7 @@ onMounted(loadUsers)
               <template #icon><RefreshCcw :size="16" /></template>
               刷新
             </NButton>
-            <NButton type="primary" @click="createOpen = true">
+            <NButton v-if="canCreateUser" type="primary" @click="createOpen = true">
               <template #icon><Plus :size="17" /></template>
               新增用户
             </NButton>
@@ -448,7 +492,7 @@ onMounted(loadUsers)
           :loading="loading"
           :pagination="false"
           :row-key="(row: UserProfile) => row.userId"
-          :scroll-x="1100"
+          :scroll-x="1160"
           :single-line="false"
           striped
         />

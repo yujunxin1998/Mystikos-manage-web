@@ -48,6 +48,38 @@ describe('todos store', () => {
     expect(store.showcaseBadge).toBe('4')
   })
 
+  it('接口 total 为字符串时仍按数字汇总，不拼成 01', async () => {
+    vi.mocked(fetchCompanionApplications)
+      .mockResolvedValueOnce({
+        records: [],
+        total: '0' as unknown as number,
+        pageNum: 1,
+        pageSize: 1,
+        pages: 0,
+      })
+      .mockResolvedValueOnce({
+        records: [],
+        total: '1' as unknown as number,
+        pageNum: 1,
+        pageSize: 1,
+        pages: 1,
+      })
+    vi.mocked(fetchCompanionShowcases).mockResolvedValue({
+      records: [],
+      total: '2' as unknown as number,
+      pageNum: 1,
+      pageSize: 1,
+      pages: 2,
+    })
+
+    const store = useTodosStore()
+    await store.refresh(true)
+
+    expect(store.applicationPending).toBe(1)
+    expect(store.showcasePending).toBe(2)
+    expect(store.applicationBadge).toBe('1')
+  })
+
   it('超过 99 显示 99+', async () => {
     vi.mocked(fetchCompanionApplications)
       .mockResolvedValueOnce({

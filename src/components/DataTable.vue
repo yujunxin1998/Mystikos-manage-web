@@ -12,6 +12,7 @@ import {
 } from 'naive-ui'
 import type { ColumnDef, RowRecord } from '../types'
 import { DEFAULT_PAGE_SIZE, pageRange } from '../utils/pagination'
+import CopyableId from './CopyableId.vue'
 import ListPagination from './ListPagination.vue'
 import StatusTag from './StatusTag.vue'
 
@@ -68,11 +69,15 @@ function changePageSize(size: number) {
   page.value = 1
 }
 
+function isCopyableIdentifier(col: ColumnDef): boolean {
+  return col.key === 'id' || col.key === 'userId' || /ID|编号|编码/.test(col.label)
+}
+
 const tableColumns = computed<DataTableColumns<RowRecord>>(() => {
   const cols: DataTableColumns<RowRecord> = props.columns.map((col) => ({
     title: col.label,
     key: col.key,
-    width: col.kind === 'image' ? 80 : 140,
+    width: col.kind === 'image' ? 80 : col.kind === 'identifier' && isCopyableIdentifier(col) ? 188 : 140,
     render: (row) => {
       if (col.kind === 'image') {
         return h('img', { class: 'product-thumb', src: row[col.key], alt: row.name || '' })
@@ -81,6 +86,9 @@ const tableColumns = computed<DataTableColumns<RowRecord>>(() => {
         return h(StatusTag, { status: row[col.key], variant: 'business' })
       }
       if (col.kind === 'identifier') {
+        if (isCopyableIdentifier(col)) {
+          return h(CopyableId, { value: row[col.key], name: col.label })
+        }
         return h('span', { class: 'order-identifier' }, row[col.key])
       }
       if (col.kind === 'strong') {

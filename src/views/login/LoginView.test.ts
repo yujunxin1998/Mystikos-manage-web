@@ -20,6 +20,16 @@ async function mountLoginView() {
 }
 
 describe('LoginView', () => {
+  it('呈现编辑式品牌主视觉和安全登录舱', async () => {
+    const wrapper = await mountLoginView()
+
+    expect(wrapper.find('.login-editorial').exists()).toBe(true)
+    expect(wrapper.text()).toContain('MYSTIKOS')
+    expect(wrapper.text()).toContain('CONTROL')
+    expect(wrapper.find('.login-capability-rail').exists()).toBe(true)
+    expect(wrapper.find('.login-card-top').exists()).toBe(true)
+  })
+
   it('登录方式切换后明确标记当前选项', async () => {
     const wrapper = await mountLoginView()
     const buttons = wrapper.findAll('.login-channel button')

@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { getCurrentUser, login as loginRequest, logout as logoutRequest } from '../api/auth'
 import { fetchMyProfile } from '../api/profile'
+import { fetchUserPermissions } from '../api/users'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, useAuthStore } from './auth'
 
 vi.mock('../api/auth', () => ({
@@ -13,6 +14,10 @@ vi.mock('../api/auth', () => ({
 
 vi.mock('../api/profile', () => ({
   fetchMyProfile: vi.fn(),
+}))
+
+vi.mock('../api/users', () => ({
+  fetchUserPermissions: vi.fn(),
 }))
 
 describe('auth store', () => {
@@ -42,6 +47,7 @@ describe('auth store', () => {
       roles: ['ADMIN'],
       status: 'ACTIVE',
     })
+    vi.mocked(fetchUserPermissions).mockResolvedValue(['user.create', 'user.delete'])
     const authStore = useAuthStore()
 
     await authStore.login({
@@ -56,11 +62,14 @@ describe('auth store', () => {
     expect(authStore.user?.displayName).toBe('夜航星')
     expect(authStore.user?.avatar).toBe('夜')
     expect(authStore.user?.roles).toEqual(['ADMIN'])
+    expect(authStore.permissions).toEqual(['user.create', 'user.delete'])
+    expect(authStore.can('user.create')).toBe(true)
+    expect(authStore.can('user.ban')).toBe(false)
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe('access-token')
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe('refresh-token')
   })
 
-  it('退出时调用服务端并始终清除本地认证状态', async () => {
+  it('退出时先清本地态再通知服务端，失败也保持未登录', async () => {
     localStorage.setItem(ACCESS_TOKEN_KEY, 'access-token')
     localStorage.setItem(REFRESH_TOKEN_KEY, 'refresh-token')
     vi.mocked(logoutRequest).mockRejectedValue(new Error('offline'))
@@ -68,7 +77,10 @@ describe('auth store', () => {
 
     await authStore.logout()
 
+    expect(logoutRequest).toHaveBeenCalledWith('access-token')
     expect(authStore.isAuthenticated).toBe(false)
+    expect(authStore.user).toBeNull()
+    expect(authStore.permissions).toEqual([])
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBeNull()
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBeNull()
   })
