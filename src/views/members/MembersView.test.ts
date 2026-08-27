@@ -1,9 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
 import { NConfigProvider, NMessageProvider } from 'naive-ui'
 import { defineComponent, h } from 'vue'
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchUsers } from '../../api/users'
+import { useAuthStore } from '../../stores/auth'
+import type { AuthUser } from '../../types'
 import MembersView from './MembersView.vue'
 
 vi.mock('../../api/users', () => ({
@@ -27,7 +29,20 @@ beforeAll(() => {
   )
 })
 
-function mountMembersView() {
+function mountMembersView(auth?: Partial<AuthUser> & { permissions?: string[] }) {
+  const pinia = createPinia()
+  setActivePinia(pinia)
+  const authStore = useAuthStore()
+  if (auth) {
+    authStore.user = {
+      id: auth.id ?? 1,
+      displayName: auth.displayName ?? '考核员',
+      roles: auth.roles ?? ['ASSESSOR'],
+      avatar: auth.avatar ?? '考',
+    }
+    authStore.permissions = auth.permissions ?? []
+  }
+
   const Host = defineComponent({
     setup() {
       return () =>
@@ -40,7 +55,7 @@ function mountMembersView() {
     },
   })
 
-  return mount(Host, { global: { plugins: [createPinia()] } })
+  return mount(Host, { global: { plugins: [pinia] } })
 }
 
 describe('MembersView', () => {
@@ -82,5 +97,24 @@ describe('MembersView', () => {
       createdFrom: '2026-08-01T08:30:00',
       createdTo: '2026-08-24T18:00:00',
     })
+  })
+
+  it('无用户管理权限时不展示新增和行内操作', async () => {
+    const wrapper = mountMembersView({ roles: ['ASSESSOR'], permissions: [] })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('新增用户')
+    expect(wrapper.find('[title="角色管理"]').exists()).toBe(false)
+    expect(wrapper.find('[title="删除"]').exists()).toBe(false)
+  })
+
+  it('具备创建权限时展示新增用户', async () => {
+    const wrapper = mountMembersView({
+      roles: ['ASSESSOR'],
+      permissions: ['user.create'],
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('新增用户')
   })
 })

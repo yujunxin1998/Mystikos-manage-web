@@ -37,6 +37,8 @@ describe('App theme provider', () => {
     const root = wrapper.get('.theme-root')
     expect(root.attributes('data-theme')).toBe('light')
     expect(root.attributes('style')).toContain('--app-page: #f4f6fb')
+    expect(root.attributes('style')).toContain('--app-primary: #7257df')
+    expect(root.attributes('style')).toContain('--app-radius-md: 10px')
 
     useAppStore(pinia).toggleDark()
     await nextTick()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import { MoreHorizontal, TrendingUp } from 'lucide-vue-next'
+import { TrendingUp } from 'lucide-vue-next'
 import type { StatItem } from '../types'
 
 withDefaults(
@@ -25,7 +25,6 @@ withDefaults(
         <span :class="['stat-icon', tones[index] || 'violet']">
           <component :is="icons?.[index] || TrendingUp" :size="21" />
         </span>
-        <button type="button" aria-label="更多操作"><MoreHorizontal :size="19" /></button>
       </div>
       <p>{{ item.label }}</p>
       <div class="stat-value">

@@ -10,7 +10,7 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 export function formatRoleLabels(roles: UserRole[] | undefined | null): string {
-  if (!roles?.length) return '访客'
+  if (!roles?.length) return ''
   return roles.map((role) => ROLE_LABELS[role] || role).join(' / ')
 }
 

@@ -41,7 +41,6 @@ const {
   <div class="business-page">
     <section class="business-title">
       <div>
-        <p>{{ meta.code }}</p>
         <h1>{{ meta.title }}</h1>
         <span>{{ meta.desc }}</span>
       </div>

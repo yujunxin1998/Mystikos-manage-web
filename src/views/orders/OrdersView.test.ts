@@ -4,6 +4,9 @@ import { NConfigProvider, NMessageProvider } from 'naive-ui'
 import { defineComponent, h, nextTick } from 'vue'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import OrdersView from './OrdersView.vue'
+import { createCommerceOrder } from '../../api/commerce'
+
+vi.mock('../../api/commerce', () => ({ createCommerceOrder: vi.fn() }))
 
 beforeAll(() => {
   vi.stubGlobal(
@@ -63,5 +66,25 @@ describe('OrdersView', () => {
     await nextTick()
 
     expect(document.body.querySelector('[aria-modal="true"]')).not.toBeNull()
+    expect(document.body.textContent).toContain('收货地址')
+  })
+
+  it('通过商城接口创建订单', async () => {
+    vi.mocked(createCommerceOrder).mockResolvedValue(2099)
+    const wrapper = mountOrdersView()
+    const createButton = wrapper.findAll('button').find((button) => button.text().includes('创建订单'))
+    await createButton!.trigger('click')
+    await nextTick()
+
+    const address = document.body.querySelector<HTMLTextAreaElement>('textarea[placeholder="请输入收货地址"]')
+    expect(address).not.toBeNull()
+    address!.value = '浙江省杭州市西湖区'
+    address!.dispatchEvent(new Event('input', { bubbles: true }))
+    await nextTick()
+    const submit = Array.from(document.body.querySelectorAll('button')).find((button) => button.textContent?.includes('确认下单'))
+    submit?.click()
+    await nextTick()
+
+    expect(createCommerceOrder).toHaveBeenCalledWith({ shippingAddress: '浙江省杭州市西湖区' })
   })
 })

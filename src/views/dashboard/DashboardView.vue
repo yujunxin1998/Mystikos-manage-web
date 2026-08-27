@@ -3,11 +3,9 @@ import { computed, h, ref } from 'vue'
 import {
   ChevronRight,
   CircleDollarSign,
-  Clock3,
   CreditCard,
   Gamepad2,
   Headphones,
-  MoreHorizontal,
   Plus,
   Search,
   UserRound,
@@ -27,15 +25,18 @@ import {
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import StatCards from '../../components/StatCards.vue'
+import CopyableId from '../../components/CopyableId.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import { chartPaths, dashboardStats } from '../../mocks/dashboard'
 import { dashboardOrders } from '../../mocks/orders'
 import { useAuthStore } from '../../stores/auth'
+import { useToastStore } from '../../stores/toast'
 import { useTodosStore } from '../../stores/todos'
 import type { DashboardOrder } from '../../types'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const toastStore = useToastStore()
 const todosStore = useTodosStore()
 const { user } = storeToRefs(authStore)
 const { applicationPending, showcasePending, hasPending } = storeToRefs(todosStore)
@@ -59,10 +60,22 @@ const greeting = computed(() => {
 
 const todayLabel = computed(() => {
   const now = new Date()
-  const weekdays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY']
-  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-  return `${weekdays[now.getDay()]} · ${months[now.getMonth()]} ${now.getDate()}`
+  const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  return `${weekdays[now.getDay()]} ${now.getMonth() + 1}月${now.getDate()}日`
 })
+
+const welcomeHint = computed(() => {
+  const pending = applicationPending.value + showcasePending.value
+  if (pending > 0) {
+    return `当前有 ${pending} 项待处理，可从下方入口进入审核。`
+  }
+  return '今日暂无待审核事项，可从侧栏进入各业务模块。'
+})
+
+function confirmDemoOrder() {
+  showOrder.value = false
+  toastStore.notify('演示环境不会保存订单')
+}
 
 const filtered = computed(() =>
   dashboardOrders.filter((order) =>
@@ -87,8 +100,8 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
   {
     title: '订单编号',
     key: 'id',
-    width: 170,
-    render: (row) => h('span', { class: 'order-identifier' }, row.id),
+    width: 200,
+    render: (row) => h(CopyableId, { value: row.id, name: '订单编号' }),
   },
   {
     title: '会员',
@@ -121,12 +134,6 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
     render: (row) => h(StatusTag, { status: row.status, variant: 'table' }),
   },
   { title: '下单时间', key: 'time', width: 120 },
-  {
-    title: '',
-    key: 'more',
-    width: 48,
-    render: () => h(MoreHorizontal, { size: 18 }),
-  },
 ])
 </script>
 
@@ -134,9 +141,9 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
   <div class="page">
     <section class="welcome">
       <div>
-        <p class="eyebrow"><span></span> {{ todayLabel }}</p>
-        <h1>{{ greeting }} <span>👋</span></h1>
-        <p>今天已有 <b>18</b> 笔新订单，预计营收较昨日提升 <b>12.6%</b>。</p>
+        <p class="welcome-date">{{ todayLabel }}</p>
+        <h1>{{ greeting }}</h1>
+        <p>{{ welcomeHint }}</p>
       </div>
       <NButton type="primary" size="large" @click="showOrder = true">
         <template #icon><Plus :size="18" /></template>
@@ -176,7 +183,7 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
         <div class="panel-head">
           <div>
             <h2>营收趋势</h2>
-            <p>最近{{ range === '周' ? '7天' : '30天' }}业务收入变化</p>
+            <p>最近{{ range === '周' ? '7天' : '30天' }}演示数据</p>
           </div>
           <div class="switch">
             <button type="button" :class="{ active: range === '周' }" @click="range = '周'">
@@ -213,9 +220,11 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
         <div class="panel-head">
           <div>
             <h2>订单概览</h2>
-            <p>今日订单状态分布</p>
+            <p>演示数据，不代表真实订单</p>
           </div>
-          <button type="button" class="text-btn">查看全部 <ChevronRight :size="15" /></button>
+          <button type="button" class="text-btn" @click="router.push('/orders')">
+            查看全部 <ChevronRight :size="15" />
+          </button>
         </div>
         <div class="donut-wrap">
           <div class="donut">
@@ -240,7 +249,7 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
       <div class="panel-head dashboard-order-head">
         <div>
           <h2>最新订单</h2>
-          <p>实时查看最新业务订单</p>
+          <p>演示数据，可按编号或会员筛选</p>
         </div>
         <NSpace class="dashboard-order-actions" :size="8" align="center" wrap>
           <NInput
@@ -251,11 +260,7 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
           >
             <template #prefix><Search :size="16" /></template>
           </NInput>
-          <NButton secondary>
-            <template #icon><Clock3 :size="16" /></template>
-            今日
-          </NButton>
-          <NButton text type="primary">
+          <NButton text type="primary" @click="router.push('/orders')">
             全部订单
             <template #icon><ChevronRight :size="15" /></template>
           </NButton>
@@ -267,7 +272,7 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
           :data="filtered"
           :pagination="false"
           :row-key="(row: DashboardOrder) => row.id"
-          :scroll-x="1000"
+          :scroll-x="1100"
           :single-line="false"
           striped
         />
@@ -313,7 +318,7 @@ const orderColumns = computed<DataTableColumns<DashboardOrder>>(() => [
         <template #footer>
           <NSpace justify="end">
             <NButton @click="showOrder = false">取消</NButton>
-            <NButton type="primary" @click="showOrder = false">
+            <NButton type="primary" @click="confirmDemoOrder">
               <template #icon><CreditCard :size="17" /></template>
               确认创建
             </NButton>

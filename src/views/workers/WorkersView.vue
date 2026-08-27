@@ -23,6 +23,7 @@ import {
   type DataTableColumns,
 } from 'naive-ui'
 import ListPagination from '../../components/ListPagination.vue'
+import CopyableId from '../../components/CopyableId.vue'
 import StatusTag from '../../components/StatusTag.vue'
 import {
   createCompanion,
@@ -204,8 +205,8 @@ const columns = computed<DataTableColumns<Companion>>(() => [
   {
     title: '用户ID',
     key: 'userId',
-    width: 100,
-    render: (row) => h('span', { class: 'order-identifier' }, `#${row.userId}`),
+    width: 148,
+    render: (row) => h(CopyableId, { value: row.userId, prefix: '#', name: '用户ID' }),
   },
   {
     title: '陪玩师',
@@ -323,7 +324,6 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
   <div class="business-page companion-page">
     <section class="business-title">
       <div>
-        <p>COMPANION MANAGEMENT</p>
         <h1>陪玩师管理</h1>
         <span>维护陪玩师资料、接单状态和服务绩效</span>
       </div>
@@ -343,7 +343,7 @@ onBeforeUnmount(() => clearTimeout(searchTimer))
         <div>
           <p>接单中</p>
           <strong>{{ stats.busyCount }}</strong>
-          <small>当前 BUSY 状态人数</small>
+          <small>当前接单中人数</small>
         </div>
       </article>
     </section>

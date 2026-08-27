@@ -53,20 +53,42 @@ async function handleSubmit() {
 
 <template>
   <div class="login-page">
-    <div class="login-ambient" aria-hidden="true"></div>
+    <aside class="login-showcase" aria-hidden="true">
+      <div class="login-showcase-grid"></div>
+      <div class="login-orbit"><i></i></div>
+      <div class="login-showcase-brandbar">
+        <span class="login-showcase-mark"><Sparkles :size="20" /></span>
+        <div><strong>MYSTIKOS</strong><small>运营管理中心</small></div>
+      </div>
+      <div class="login-editorial">
+        <span class="login-editorial-index">OPERATIONS SYSTEM</span>
+        <h1>MYSTIKOS <em>CONTROL</em></h1>
+        <p>连接用户治理、陪玩审核与经营数据，让复杂运营在统一、清晰且安全的工作台中有序发生。</p>
+        <span class="login-service-state"><i></i>Mystikos Server API 服务入口</span>
+      </div>
+      <div class="login-capability-rail">
+        <div><span>01 / IDENTITY</span><strong>账号与权限</strong><small>统一身份治理</small></div>
+        <div><span>02 / REVIEW</span><strong>内容与审核</strong><small>陪玩资料流程</small></div>
+        <div><span>03 / INSIGHT</span><strong>经营与洞察</strong><small>运营数据汇总</small></div>
+      </div>
+    </aside>
 
     <section class="login-panel">
       <div class="login-brand">
-        <span class="brand-mark"><Sparkles :size="22" /></span>
+        <span class="brand-mark"><Sparkles :size="20" /></span>
         <div>
           <strong>MYSTIKOS</strong>
           <p>运营管理后台</p>
         </div>
       </div>
 
-      <div class="login-head">
-        <h1>欢迎回来</h1>
-        <p>登录后进入运营中心，管理会员、订单与经营数据</p>
+      <div class="login-card-top">
+        <div class="login-head">
+          <span>SECURE ACCESS</span>
+          <h1>欢迎回来</h1>
+          <p>使用管理员账号进入运营中心</p>
+        </div>
+        <i>01</i>
       </div>
 
       <form class="login-form" data-allow-autofill @submit.prevent="handleSubmit">
@@ -138,10 +160,10 @@ async function handleSubmit() {
             <input v-model="form.remember" type="checkbox" />
             <span>记住登录状态</span>
           </label>
-          <span class="login-hint">使用后台管理员账号登录</span>
+          <span class="login-hint">仅供运营人员使用</span>
         </div>
 
-        <p v-if="error" class="login-error">{{ error }}</p>
+        <p v-if="error" class="login-error" role="alert">{{ error }}</p>
 
         <button type="submit" class="primary login-submit" :disabled="!canSubmit">
           {{ authStore.loading ? '登录中...' : '进入运营中心' }}
@@ -149,7 +171,6 @@ async function handleSubmit() {
       </form>
 
       <div class="login-foot">
-        <span>仅供运营人员使用</span>
         <span>登录状态由 Mystikos Server API 验证</span>
       </div>
     </section>

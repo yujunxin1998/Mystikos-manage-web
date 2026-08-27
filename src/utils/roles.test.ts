@@ -15,6 +15,9 @@ describe('roles helpers', () => {
 
   it('格式化角色中文标签', () => {
     expect(formatRoleLabels(['ADMIN', 'ASSESSOR'])).toBe('管理员 / 考核员')
+    expect(formatRoleLabels(['GUEST'])).toBe('访客')
+    expect(formatRoleLabels([])).toBe('')
+    expect(formatRoleLabels(null)).toBe('')
   })
 
   it('取展示名首字作为头像字', () => {

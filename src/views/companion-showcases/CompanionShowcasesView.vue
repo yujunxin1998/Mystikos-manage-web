@@ -2,12 +2,17 @@
 import { computed, h, onMounted, reactive, ref } from 'vue'
 import { IdCard, RefreshCcw, Search } from 'lucide-vue-next'
 import {
+  NAvatar,
   NButton,
   NCard,
   NDataTable,
   NDatePicker,
+  NDrawer,
+  NDrawerContent,
   NForm,
   NFormItem,
+  NImage,
+  NImageGroup,
   NInput,
   NModal,
   NSelect,
@@ -17,8 +22,10 @@ import {
   type DataTableColumns,
 } from 'naive-ui'
 import { fetchCompanionShowcases, reviewCompanionShowcase } from '../../api/companions'
+import CopyableId from '../../components/CopyableId.vue'
 import ListPagination from '../../components/ListPagination.vue'
 import StatusTag from '../../components/StatusTag.vue'
+import VoiceMessage from '../../components/VoiceMessage.vue'
 import { useTodosStore } from '../../stores/todos'
 import type { CompanionShowcase, CompanionShowcaseStatus } from '../../types'
 import { sortShowcasesForReview } from '../../utils/companionShowcases'
@@ -68,6 +75,13 @@ const rangeEnd = computed(() => range.value.end)
 const pendingCount = computed(
   () => rows.value.filter((item) => item.status === 'PENDING_REVIEW').length,
 )
+
+const previewImages = computed(() => {
+  if (!selected.value) return [] as string[]
+  const cover = selected.value.coverUrl?.trim()
+  const photos = (selected.value.photoUrls || []).map((url) => url.trim()).filter(Boolean)
+  return cover ? [cover, ...photos.filter((url) => url !== cover)] : photos
+})
 
 function toIsoDateTime(value: string | null): string | undefined {
   if (!value) return undefined
@@ -162,64 +176,77 @@ async function changePageSize(size: number) {
   await loadShowcases()
 }
 
+function renderTagCell(tags: CompanionShowcase['tags']) {
+  if (!tags?.length) return '-'
+  const shown = tags.slice(0, 2)
+  const extra = tags.length - shown.length
+  return h(
+    'div',
+    { class: 'table-tag-cell' },
+    [
+      ...shown.map((tag) =>
+        h(NTag, { size: 'small', bordered: false, type: 'info' }, () => tag.label),
+      ),
+      extra > 0 ? h(NTag, { size: 'small', bordered: false }, () => `+${extra}`) : null,
+    ].filter(Boolean),
+  )
+}
+
 const columns = computed<DataTableColumns<CompanionShowcase>>(() => [
   {
     title: '修订ID',
     key: 'id',
-    width: 90,
-    render: (row) => h('span', { class: 'order-identifier' }, `#${row.id}`),
+    width: 148,
+    render: (row) => h(CopyableId, { value: row.id, prefix: '#', name: '修订ID' }),
   },
   {
     title: '用户',
     key: 'applicantNickname',
-    width: 150,
+    width: 160,
+    ellipsis: { tooltip: true },
     render: (row) =>
       h('strong', { class: 'order-member' }, row.applicantNickname || `用户 #${row.userId}`),
   },
   {
     title: '联系方式',
     key: 'contact',
-    width: 180,
+    width: 220,
+    ellipsis: { tooltip: true },
     render: (row) => row.applicantPhone || row.applicantEmail || '-',
   },
   {
     title: '标语',
     key: 'tagline',
+    minWidth: 180,
     ellipsis: { tooltip: true },
     render: (row) => row.tagline || '-',
   },
   {
     title: '标签',
     key: 'tags',
-    width: 200,
-    render: (row) =>
-      h(NSpace, { size: 4, wrap: true }, () =>
-        (row.tags || []).length
-          ? (row.tags || []).map((tag) =>
-              h(NTag, { size: 'small', bordered: false, type: 'info' }, () => tag.label),
-            )
-          : [h('span', '-')],
-      ),
+    width: 220,
+    render: (row) => renderTagCell(row.tags),
   },
   {
     title: '状态',
     key: 'status',
-    width: 110,
+    width: 100,
     render: (row) => h(StatusTag, { status: statusLabels[row.status], variant: 'table' }),
   },
   {
     title: '更新时间',
     key: 'updatedAt',
-    width: 170,
+    width: 168,
+    ellipsis: { tooltip: true },
     render: (row) => formatDate(row.updatedAt || row.createdAt),
   },
   {
     title: '操作',
     key: 'actions',
-    width: 220,
+    width: 112,
     fixed: 'right',
     render: (row) =>
-      h(NSpace, { size: 6, wrap: false }, () => {
+      h(NSpace, { size: 8, wrap: false }, () => {
         const buttons = [
           h(
             NButton,
@@ -254,9 +281,8 @@ onMounted(loadShowcases)
   <div class="business-page showcase-page">
     <section class="business-title">
       <div>
-        <p>SHOWCASE REVIEW</p>
         <h1>陪玩名片审核</h1>
-        <span>审核陪玩上传的展示卡资料，通过后对外发布</span>
+        <span>审核展示卡资料，封面与媒体可在页内预览后决定通过或驳回</span>
       </div>
     </section>
 
@@ -340,8 +366,7 @@ onMounted(loadShowcases)
           :loading="loading"
           :pagination="false"
           :row-key="(row: CompanionShowcase) => row.id"
-          :scroll-x="1200"
-          :single-line="false"
+          :scroll-x="1320"
           striped
         />
       </div>
@@ -358,105 +383,163 @@ onMounted(loadShowcases)
       />
     </section>
 
-    <NModal
+    <NDrawer
       :show="detailOpen && !!selected"
-      :mask-closable="false"
+      :width="840"
+      placement="right"
+      display-directive="if"
+      :trap-focus="false"
+      to="body"
       @update:show="(show) => (detailOpen = show)"
     >
-      <NCard
-        v-if="selected"
-        class="app-form-modal wide"
-        title="名片详情"
-        :bordered="false"
-        size="huge"
+      <NDrawerContent
+        class="showcase-drawer"
         closable
-        role="dialog"
-        aria-modal="true"
+        :native-scrollbar="false"
         @close="detailOpen = false"
       >
-        <p class="app-form-subtitle">
-          {{ selected.applicantNickname || `用户 #${selected.userId}` }} ·
-          {{ statusLabels[selected.status] }}
-        </p>
-        <div class="showcase-detail">
-          <div v-if="selected.coverUrl" class="showcase-cover">
-            <img :src="selected.coverUrl" alt="封面" />
+        <template #header>
+          <div v-if="selected" class="showcase-profile-head">
+            <NAvatar
+              round
+              :size="48"
+              :src="selected.photoUrls?.[0] || selected.coverUrl"
+            >
+              {{ (selected.applicantNickname || '用').slice(0, 1) }}
+            </NAvatar>
+            <div class="showcase-profile-copy">
+              <span>名片详情</span>
+              <strong>{{ selected.applicantNickname || `用户 #${selected.userId}` }}</strong>
+              <small>{{ selected.applicantPhone || selected.applicantEmail || '暂未提供联系方式' }}</small>
+            </div>
+            <StatusTag :status="statusLabels[selected.status]" variant="table" />
           </div>
-          <dl class="showcase-meta">
-            <div><dt>标语</dt><dd>{{ selected.tagline || '-' }}</dd></div>
-            <div><dt>可约时间</dt><dd>{{ selected.availability || '-' }}</dd></div>
-            <div><dt>简介</dt><dd>{{ selected.bio || '-' }}</dd></div>
+        </template>
+
+        <div v-if="selected" class="showcase-sheet">
+          <header class="showcase-identity">
             <div>
-              <dt>标签</dt>
-              <dd>
-                <NSpace v-if="selected.tags?.length" :size="6">
-                  <NTag
-                    v-for="tag in selected.tags"
-                    :key="tag.id"
-                    size="small"
-                    type="info"
-                    :bordered="false"
-                  >
-                    {{ tag.label }}
-                  </NTag>
-                </NSpace>
-                <span v-else>-</span>
-              </dd>
+              <span class="showcase-identity-label">名片标语</span>
+              <h2>{{ selected.tagline || selected.applicantNickname || `修订 #${selected.id}` }}</h2>
+              <p v-if="selected.availability">{{ selected.availability }}</p>
             </div>
-            <div>
-              <dt>联系方式</dt>
-              <dd>{{ selected.applicantPhone || selected.applicantEmail || '-' }}</dd>
-            </div>
-            <div>
-              <dt>审核意见</dt>
-              <dd>{{ selected.reviewComment || '-' }}</dd>
-            </div>
-          </dl>
-          <div v-if="selected.photoUrls?.length" class="showcase-media">
-            <h3>照片</h3>
-            <div class="showcase-photos">
-              <a
-                v-for="(url, index) in selected.photoUrls"
-                :key="url"
-                :href="url"
-                target="_blank"
-                rel="noreferrer"
+            <div v-if="selected.tags?.length" class="showcase-tags">
+              <NTag
+                v-for="tag in selected.tags"
+                :key="tag.id"
+                size="small"
+                type="info"
+                :bordered="false"
               >
-                <img :src="url" :alt="`照片 ${index + 1}`" />
-              </a>
+                {{ tag.label }}
+              </NTag>
             </div>
-          </div>
-          <div v-if="selected.videoUrls?.length" class="showcase-media">
-            <h3>视频</h3>
-            <ul>
-              <li v-for="url in selected.videoUrls" :key="url">
-                <a :href="url" target="_blank" rel="noreferrer">{{ url }}</a>
-              </li>
-            </ul>
-          </div>
-          <div v-if="selected.audioUrls?.length" class="showcase-media">
-            <h3>音频</h3>
-            <ul>
-              <li v-for="url in selected.audioUrls" :key="url">
-                <a :href="url" target="_blank" rel="noreferrer">{{ url }}</a>
-              </li>
-            </ul>
+          </header>
+
+          <NImageGroup v-if="previewImages.length">
+            <figure v-if="selected.coverUrl" class="showcase-media-stage">
+              <div
+                class="showcase-media-backdrop"
+                :style="{ backgroundImage: `url(${selected.coverUrl})` }"
+                aria-hidden="true"
+              ></div>
+              <NImage
+                :src="selected.coverUrl"
+                alt="封面"
+                object-fit="contain"
+                :img-props="{ loading: 'lazy', draggable: false }"
+              />
+            </figure>
+
+            <section v-if="selected.photoUrls?.length" class="showcase-photo-strip">
+              <div class="showcase-section-title">
+                <h3>照片</h3>
+                <span>{{ selected.photoUrls.length }} 张</span>
+              </div>
+              <div class="showcase-photos">
+                <NImage
+                  v-for="(url, index) in selected.photoUrls"
+                  :key="`${url}-${index}`"
+                  :src="url"
+                  :alt="`照片 ${index + 1}`"
+                  :width="148"
+                  :height="111"
+                  object-fit="cover"
+                  :img-props="{ loading: 'lazy', draggable: false }"
+                />
+              </div>
+            </section>
+          </NImageGroup>
+          <p v-else class="showcase-empty-media">暂无封面或照片</p>
+
+          <div class="showcase-detail-grid">
+            <div class="showcase-detail-main">
+              <section class="showcase-section showcase-copy-section">
+                <div class="showcase-section-title"><h3>简介</h3></div>
+                <p v-if="selected.bio" class="showcase-bio">{{ selected.bio }}</p>
+                <p v-else class="showcase-muted-copy">暂未填写简介</p>
+              </section>
+
+              <section v-if="selected.audioUrls?.length" class="showcase-section showcase-voice-section">
+                <div class="showcase-section-title"><h3>语音介绍</h3><span>{{ selected.audioUrls.length }} 条</span></div>
+                <ul class="showcase-voice-list">
+                  <li v-for="(url, index) in selected.audioUrls" :key="`audio-${index}`">
+                    <VoiceMessage :src="url" :label="`语音 ${index + 1}`" :index="index + 1" />
+                  </li>
+                </ul>
+              </section>
+
+              <section v-if="selected.videoUrls?.length" class="showcase-section">
+                <div class="showcase-section-title"><h3>视频</h3><span>{{ selected.videoUrls.length }} 条</span></div>
+                <ul class="showcase-av-list">
+                  <li v-for="(url, index) in selected.videoUrls" :key="`video-${index}`">
+                    <span>视频 {{ index + 1 }}</span>
+                    <video controls preload="metadata" playsinline :src="url">当前浏览器不支持视频播放</video>
+                  </li>
+                </ul>
+              </section>
+            </div>
+
+            <aside class="showcase-detail-aside">
+              <section class="showcase-section">
+                <div class="showcase-section-title"><h3>资料</h3></div>
+                <dl class="showcase-facts">
+                  <div><dt>联系方式</dt><dd>{{ selected.applicantPhone || selected.applicantEmail || '-' }}</dd></div>
+                  <div><dt>更新时间</dt><dd>{{ formatDate(selected.updatedAt || selected.createdAt) }}</dd></div>
+                  <div v-if="selected.reviewerNickname"><dt>审核人</dt><dd>{{ selected.reviewerNickname }}</dd></div>
+                  <div v-if="selected.reviewedAt"><dt>审核时间</dt><dd>{{ formatDate(selected.reviewedAt) }}</dd></div>
+                </dl>
+              </section>
+              <section v-if="selected.reviewComment" class="showcase-review-note">
+                <h3>审核意见</h3>
+                <p>{{ selected.reviewComment }}</p>
+              </section>
+            </aside>
           </div>
         </div>
+
         <template #footer>
-          <NSpace justify="end">
+          <NSpace class="showcase-drawer-actions" justify="end">
             <NButton @click="detailOpen = false">关闭</NButton>
             <NButton
-              v-if="selected.status === 'PENDING_REVIEW'"
+              v-if="selected?.status === 'PENDING_REVIEW'"
+              type="error"
+              secondary
+              @click="openReview(selected, false)"
+            >
+              驳回
+            </NButton>
+            <NButton
+              v-if="selected?.status === 'PENDING_REVIEW'"
               type="primary"
               @click="openReview(selected, true)"
             >
-              去审核
+              通过审核
             </NButton>
           </NSpace>
         </template>
-      </NCard>
-    </NModal>
+      </NDrawerContent>
+    </NDrawer>
 
     <NModal v-model:show="reviewOpen" :mask-closable="false">
       <NCard
