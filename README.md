@@ -167,6 +167,15 @@ npm run preview
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
 ```
 
+### 生产环境 MinIO 代理
+
+`deploy/nginx-production.conf` 除了 `8080` 主站入口，还监听以下端口：
+
+- `9000`：反向代理到 `mystikos-minio:9000`，供对象上传、下载和预签名 URL 使用。
+- `9001`：反向代理到 `mystikos-minio:9001`，供 MinIO 管理控制台和 WebSocket 使用。
+
+部署 Nginx 容器时必须发布 `8080:8080`、`9000:9000` 和 `9001:9001`。MinIO 容器应只加入同一个 Docker 网络，不要再把自己的 `9000/9001` 映射到宿主机，以免和 Nginx 冲突。后端使用 `MINIO_ENDPOINT=http://minio:9000` 进行容器内上传，并使用 `MINIO_PUBLIC_ENDPOINT=http://116.62.218.227:9000` 生成浏览器可访问的预签名 URL。MinIO 建议同时设置 `MINIO_SERVER_URL=http://116.62.218.227:9000` 和 `MINIO_BROWSER_REDIRECT_URL=http://116.62.218.227:9001`，避免控制台跳转到容器内部地址。
+
 ## 项目结构
 
 ```text
@@ -357,6 +366,13 @@ Axios 实例位于 `src/api/http.ts`，已配置：
 提交功能前至少检查：已实现功能、项目结构、交互说明、后续计划和变更记录是否仍与代码一致。
 
 ## 变更记录
+
+### 2026-08-25（MinIO 线上反向代理）
+
+- Nginx 新增 9000 对象 API 和 9001 管理控制台反向代理
+- 后端区分 MinIO 内部连接地址与浏览器预签名公网地址，避免返回 `http://minio:9000`
+- 保留预签名请求的 Host，并为大文件上传关闭请求及响应缓冲
+- 控制台代理支持 WebSocket；部署时由 Nginx 独占宿主机 9000/9001 端口
 
 ### 2026-08-25（主按钮品牌色修正）
 
