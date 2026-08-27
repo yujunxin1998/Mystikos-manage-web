@@ -1,8 +1,14 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getCurrentUser, login as loginRequest, logout as logoutRequest } from '../api/auth'
+import {
+  getCurrentUser,
+  getLoginPublicKey,
+  login as loginRequest,
+  logout as logoutRequest,
+} from '../api/auth'
 import { fetchMyProfile } from '../api/profile'
 import { fetchUserPermissions } from '../api/users'
+import { encryptLoginCredential } from '../utils/loginEncryption'
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, useAuthStore } from './auth'
 
 vi.mock('../api/auth', () => ({
@@ -10,6 +16,11 @@ vi.mock('../api/auth', () => ({
   logout: vi.fn(),
   getCurrentUser: vi.fn(),
   refreshAccessToken: vi.fn(),
+  getLoginPublicKey: vi.fn(),
+}))
+
+vi.mock('../utils/loginEncryption', () => ({
+  encryptLoginCredential: vi.fn(),
 }))
 
 vi.mock('../api/profile', () => ({
@@ -29,6 +40,12 @@ describe('auth store', () => {
   })
 
   it('登录后拉取当前用户资料并展示昵称', async () => {
+    vi.mocked(getLoginPublicKey).mockResolvedValue({
+      keyId: 'login-key-2026-08',
+      algorithm: 'RSA-OAEP-256',
+      publicKey: '-----BEGIN PUBLIC KEY-----\nMIIB...\n-----END PUBLIC KEY-----',
+    })
+    vi.mocked(encryptLoginCredential).mockResolvedValue('base64-encrypted-password')
     vi.mocked(loginRequest).mockResolvedValue({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
@@ -55,6 +72,18 @@ describe('auth store', () => {
       identifier: '13800138000',
       password: 'secret123',
       remember: true,
+    })
+
+    expect(encryptLoginCredential).toHaveBeenCalledWith(
+      'secret123',
+      '-----BEGIN PUBLIC KEY-----\nMIIB...\n-----END PUBLIC KEY-----',
+    )
+    expect(loginRequest).toHaveBeenCalledWith({
+      channel: 'PHONE',
+      identifier: '13800138000',
+      credentialType: 'PASSWORD',
+      keyId: 'login-key-2026-08',
+      encryptedCredential: 'base64-encrypted-password',
     })
 
     expect(authStore.isAuthenticated).toBe(true)

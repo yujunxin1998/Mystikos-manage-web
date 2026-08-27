@@ -21,6 +21,7 @@ export type {
   LoginChannel,
   LoginForm,
   LoginRequest,
+  LoginPublicKeyResponse,
   UserRole,
 } from './auth'
 export type { CreateUserRequest, UserProfile, UserQuery, UserStatus } from './user'

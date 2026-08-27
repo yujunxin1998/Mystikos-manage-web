@@ -1,9 +1,20 @@
-import type { ApiResponse, AuthTokenResponse, CurrentUserResponse, LoginRequest } from '../types'
+import type {
+  ApiResponse,
+  AuthTokenResponse,
+  CurrentUserResponse,
+  LoginPublicKeyResponse,
+  LoginRequest,
+} from '../types'
 import http from './http'
 import { unwrapApiResponse } from './response'
 
 export async function login(request: LoginRequest): Promise<AuthTokenResponse> {
   const { data } = await http.post<ApiResponse<AuthTokenResponse>>('/api/v1/auth/login', request)
+  return unwrapApiResponse(data)
+}
+
+export async function getLoginPublicKey(): Promise<LoginPublicKeyResponse> {
+  const { data } = await http.get<ApiResponse<LoginPublicKeyResponse>>('/api/v1/auth/public-key')
   return unwrapApiResponse(data)
 }
 

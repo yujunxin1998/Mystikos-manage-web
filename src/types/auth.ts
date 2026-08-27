@@ -23,7 +23,14 @@ export interface LoginRequest {
   channel: LoginChannel
   identifier: string
   credentialType: 'PASSWORD'
-  credential: string
+  keyId: string
+  encryptedCredential: string
+}
+
+export interface LoginPublicKeyResponse {
+  keyId: string
+  algorithm: 'RSA-OAEP-256'
+  publicKey: string
 }
 
 export interface AuthTokenResponse {

@@ -335,7 +335,7 @@ Admin/
 
 访问任意后台页面时，若未登录会自动跳转到 `/login`。
 
-登录页调用 `POST /api/v1/auth/login`，支持手机号或邮箱配合密码登录。登录成功后，Access Token、Refresh Token 和用户信息会写入浏览器 `localStorage` 或 `sessionStorage`（取决于是否勾选“记住登录状态”）。顶部头像与总览问候会再请求 `GET /api/v1/auth/me`（角色）与 `GET /api/v1/profile/me`（昵称等资料）展示当前登录用户；无昵称时回退为手机号/邮箱或用户 ID。Access Token 失效时会调用 `POST /api/v1/auth/refresh-token` 刷新；刷新失败则清除登录状态并返回登录页。顶部头像菜单调用服务端退出接口并清除本地状态。
+登录时先调用 `GET /api/v1/auth/public-key` 获取 `keyId` 和 X.509 PEM 公钥，再使用浏览器 Web Crypto API 按 RSA-OAEP + SHA-256 加密密码。随后调用 `POST /api/v1/auth/login`，只提交 `keyId` 与 Base64 格式的 `encryptedCredential`，不发送明文密码。登录成功后，Access Token、Refresh Token 和用户信息会写入浏览器 `localStorage` 或 `sessionStorage`（取决于是否勾选“记住登录状态”）。顶部头像与总览问候会再请求 `GET /api/v1/auth/me`（角色）与 `GET /api/v1/profile/me`（昵称等资料）展示当前登录用户；无昵称时回退为手机号/邮箱或用户 ID。Access Token 失效时会调用 `POST /api/v1/auth/refresh-token` 刷新；刷新失败则清除登录状态并返回登录页。顶部头像菜单调用服务端退出接口并清除本地状态。
 
 登录页采用深色编辑式控制台构图：桌面端左侧通过超大 `MYSTIKOS CONTROL` 字标、抽象轨道和三项真实系统能力建立品牌层次，右侧为独立安全登录舱；窄屏隐藏装饰主视觉，折叠为顶部品牌条与全宽表单。手机号与邮箱登录方式使用分段切换控件，当前方式通过品牌紫滑动高亮、文字强调及表单淡入效果进行反馈，同时支持键盘焦点、无动画偏好与辅助技术识别。
 
@@ -660,6 +660,13 @@ Axios 实例位于 `src/api/http.ts`，已配置：
 - 为业务列表增加新增、编辑、删除、搜索、状态筛选、刷新和 CSV 导出
 - 调整中文字体方案及数字、金额的排版层级
 - 完善项目开发、API 接入和文档维护说明
+
+### 2026-08-27（RSA 登录凭证加密）
+
+- 登录前接入 `GET /api/v1/auth/public-key`，获取密钥版本与 X.509 PEM 公钥
+- 使用浏览器原生 Web Crypto API 执行 RSA-OAEP + SHA-256 加密，不新增第三方加密依赖
+- 密码登录请求改为提交 `keyId` 和 Base64 `encryptedCredential`，不再传输明文 `credential`
+- 公钥格式、浏览器能力或加密过程异常时终止登录并展示错误信息
 
 ## 说明
 
