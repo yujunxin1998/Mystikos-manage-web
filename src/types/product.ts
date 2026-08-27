@@ -17,7 +17,6 @@ export interface ProductQuery {
 }
 
 export interface CreateProductRequest {
-  categoryId?: number
   name: string
   description?: string
   price: number
@@ -26,7 +25,6 @@ export interface CreateProductRequest {
 }
 
 export interface UpdateProductRequest {
-  categoryId?: number
   name: string
   description?: string
   price: number

@@ -49,13 +49,30 @@
 .product-upload {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-start;
 }
 
 .product-upload-item {
   position: relative;
-  width: 72px;
+  width: 88px;
+}
+
+.product-upload-item .product-image {
+  border-radius: var(--app-radius-md, 10px);
+}
+
+.product-upload-cover {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--app-primary) 88%, transparent);
+  color: #fff;
+  font-size: 11px;
+  line-height: 18px;
+  pointer-events: none;
 }
 
 .product-upload-remove {
@@ -63,28 +80,59 @@
   top: -8px;
   right: -8px;
   box-shadow: var(--app-shadow-subtle);
+  background: var(--app-surface-raised);
 }
 
 .product-upload-add {
-  width: 72px;
-  height: 72px;
-  border: 1px dashed var(--app-border);
-  border-radius: var(--app-radius-sm);
+  width: 88px;
+  height: 88px;
+  border: 1.5px dashed var(--app-border-strong);
+  border-radius: var(--app-radius-md, 10px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   color: var(--app-text-muted);
-  font-size: 12px;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+  background: var(--app-surface-muted);
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.2s;
+}
+
+.product-upload-add__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-primary);
+}
+
+.product-upload-add__text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.product-upload-add__hint {
+  font-size: 11px;
+  opacity: 0.75;
 }
 
 .product-upload-add:hover {
   color: var(--app-primary);
   border-color: var(--app-primary);
   background: var(--app-primary-soft);
+  transform: translateY(-1px);
+}
+
+.product-upload-add.is-uploading {
+  cursor: default;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.product-upload-tip {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--app-text-muted);
 }
 
 .product-detail-media {

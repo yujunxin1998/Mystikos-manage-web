@@ -55,7 +55,6 @@ describe('manage products api', () => {
 
     await expect(
       createProduct({
-        categoryId: 3,
         name: '星轨香薰',
         description: '木质调香',
         price: 99.9,
@@ -65,7 +64,6 @@ describe('manage products api', () => {
     ).resolves.toBe(88)
 
     expect(http.post).toHaveBeenCalledWith('/api/v1/manage/products', {
-      categoryId: 3,
       name: '星轨香薰',
       description: '木质调香',
       price: 99.9,
@@ -79,7 +77,6 @@ describe('manage products api', () => {
 
     await expect(
       updateProduct(88, {
-        categoryId: 3,
         name: '星轨香薰',
         description: '木质调香',
         price: 109.9,
@@ -89,7 +86,6 @@ describe('manage products api', () => {
     ).resolves.toEqual(productFixture)
 
     expect(http.put).toHaveBeenCalledWith('/api/v1/manage/products/88', {
-      categoryId: 3,
       name: '星轨香薰',
       description: '木质调香',
       price: 109.9,

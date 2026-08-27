@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import {
   NButton,
   NCard,
@@ -10,6 +10,7 @@ import {
   NModal,
   NSelect,
   NSpace,
+  NSpin,
   NUpload,
   useMessage,
   type UploadCustomRequestOptions,
@@ -39,9 +40,10 @@ const emit = defineEmits<{
 
 const message = useMessage()
 
+const uploading = ref(false)
+
 const form = reactive({
   name: '',
-  categoryId: null as number | null,
   price: null as number | null,
   initialStock: null as number | null,
   description: '',
@@ -59,7 +61,6 @@ const title = computed(() => (props.mode === 'create' ? '新增商品' : '编辑
 function resetForm() {
   const source = props.mode === 'edit' ? props.product : null
   form.name = source?.name ?? ''
-  form.categoryId = source?.categoryId ?? null
   form.price = source?.price ?? null
   form.initialStock = null
   form.description = source?.description ?? ''
@@ -80,6 +81,7 @@ async function handleUpload(options: UploadCustomRequestOptions) {
     options.onError()
     return
   }
+  uploading.value = true
   try {
     const result = await uploadFile(file)
     form.images = [...form.images, result.objectKey]
@@ -87,6 +89,8 @@ async function handleUpload(options: UploadCustomRequestOptions) {
   } catch (error) {
     options.onError()
     message.error(error instanceof Error ? error.message : '图片上传失败')
+  } finally {
+    uploading.value = false
   }
 }
 
@@ -104,10 +108,6 @@ function submit() {
     message.warning('价格必须大于零')
     return
   }
-  if (form.categoryId != null && (!Number.isInteger(form.categoryId) || form.categoryId <= 0)) {
-    message.warning('分类 ID 必须为正整数')
-    return
-  }
 
   if (props.mode === 'create') {
     if (
@@ -120,7 +120,6 @@ function submit() {
     }
     emit('submit', {
       name,
-      categoryId: form.categoryId ?? undefined,
       description: form.description.trim() || undefined,
       price: form.price,
       images: form.images,
@@ -131,7 +130,6 @@ function submit() {
 
   emit('submit', {
     name,
-    categoryId: form.categoryId ?? undefined,
     description: form.description.trim() || undefined,
     price: form.price,
     images: form.images,
@@ -158,15 +156,6 @@ function submit() {
       <NForm class="app-form-grid" label-placement="top">
         <NFormItem label="商品名称" required>
           <NInput v-model:value="form.name" placeholder="请输入商品名称" />
-        </NFormItem>
-        <NFormItem label="分类 ID">
-          <NInputNumber
-            v-model:value="form.categoryId"
-            :min="1"
-            :precision="0"
-            placeholder="可选，正整数"
-            style="width: 100%"
-          />
         </NFormItem>
         <NFormItem label="价格" required>
           <NInputNumber
@@ -200,8 +189,13 @@ function submit() {
         </NFormItem>
         <NFormItem label="商品图片" class="app-form-full">
           <div class="product-upload">
-            <div v-for="(img, index) in form.images" :key="`${img}-${index}`" class="product-upload-item">
+            <div
+              v-for="(img, index) in form.images"
+              :key="`${img}-${index}`"
+              class="product-upload-item"
+            >
               <ProductImage :src="img" />
+              <span v-if="index === 0" class="product-upload-cover">主图</span>
               <NButton
                 class="product-upload-remove"
                 quaternary
@@ -211,16 +205,21 @@ function submit() {
                 title="删除图片"
                 @click="removeImage(index)"
               >
-                <template #icon><X :size="12" /></template>
+                <template #icon><X :size="14" /></template>
               </NButton>
             </div>
             <NUpload :show-file-list="false" accept="image/*" :custom-request="handleUpload">
-              <div class="product-upload-add">
-                <ImagePlus :size="20" />
-                <span>上传</span>
+              <div class="product-upload-add" :class="{ 'is-uploading': uploading }">
+                <NSpin v-if="uploading" :size="20" />
+                <template v-else>
+                  <span class="product-upload-add__icon"><ImagePlus :size="22" /></span>
+                  <span class="product-upload-add__text">上传图片</span>
+                  <span class="product-upload-add__hint">JPG / PNG</span>
+                </template>
               </div>
             </NUpload>
           </div>
+          <p class="product-upload-tip">第一张作为封面图，单张不超过 5MB</p>
         </NFormItem>
       </NForm>
       <template #footer>
