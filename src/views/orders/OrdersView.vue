@@ -1,328 +1,309 @@
 <script setup lang="ts">
-import { computed, h, ref, watch } from 'vue'
+import { computed, h, onMounted, ref } from 'vue'
 import {
   NButton,
-  NCard,
   NDataTable,
-  NForm,
-  NFormItem,
   NInput,
-  NModal,
-  NPopconfirm,
   NSelect,
   NSpace,
+  NTag,
   useMessage,
   type DataTableColumns,
 } from 'naive-ui'
-import {
-  ArrowDownToLine,
-  CircleDollarSign,
-  Gamepad2,
-  Pencil,
-  Plus,
-  RefreshCcw,
-  Search,
-  Trash2,
-  TrendingUp,
-  UsersRound,
-} from 'lucide-vue-next'
+import { CircleDollarSign, Eye, PackageSearch, RefreshCcw, Search, Truck } from 'lucide-vue-next'
 import ListPagination from '../../components/ListPagination.vue'
 import CopyableId from '../../components/CopyableId.vue'
-import StatCards from '../../components/StatCards.vue'
-import StatusTag from '../../components/StatusTag.vue'
-import { createCommerceOrder } from '../../api/commerce'
-import { useCrudList } from '../../composables/useCrudList'
-import { orderMeta, orderRows } from '../../mocks/orders'
-import type { Order } from '../../types'
+import OrderDetailDrawer from '../../components/orders/OrderDetailDrawer.vue'
+import { fetchOrder, fetchOrders, transitionOrder } from '../../api/manage-orders'
+import type { ManageOrder, ManageOrderStatus, OrderAction } from '../../types'
+import { orderStatusLabel, orderStatusTone } from '../../utils/order-status'
 import { DEFAULT_PAGE_SIZE, pageRange } from '../../utils/pagination'
+import { formatDateTime, formatMoney } from '../../utils/format'
 
-const statIcons = [TrendingUp, UsersRound, Gamepad2, CircleDollarSign]
 const message = useMessage()
-const page = ref(1)
+
+const rows = ref<ManageOrder[]>([])
+const loading = ref(false)
+const status = ref<ManageOrderStatus | ''>('')
+const patronIdInput = ref('')
+const patronId = ref<number>()
+const pageNum = ref(1)
 const pageSize = ref(DEFAULT_PAGE_SIZE)
-const commerceModal = ref(false)
-const commerceLoading = ref(false)
-const shippingAddress = ref('')
+const total = ref(0)
+const pages = ref(0)
 
-const {
-  keyword,
-  statusFilter,
-  modal,
-  editingKey,
-  form,
-  statusOptions,
-  rows,
-  resetRows,
-  openEdit,
-  removeRow,
-  submit,
-  exportRows,
-} = useCrudList({
-  meta: orderMeta,
-  source: orderRows,
-  filenamePrefix: '订单管理',
-  notify: (text) => message.success(text),
-})
+const detailOpen = ref(false)
+const detailLoading = ref(false)
+const detailError = ref('')
+const selected = ref<ManageOrder | null>(null)
+const actionLoading = ref<OrderAction>()
 
-const statusSelectOptions = computed(() => [
-  { label: '全部状态', value: '全部状态' },
-  ...statusOptions.value.map((status) => ({ label: status, value: status })),
-])
-const pageCount = computed(() => Math.max(1, Math.ceil(rows.value.length / pageSize.value)))
-const pageRows = computed(() => {
-  const start = (page.value - 1) * pageSize.value
-  return rows.value.slice(start, start + pageSize.value)
-})
-const range = computed(() => pageRange(page.value, pageSize.value, rows.value.length))
+const statusOptions = [
+  { label: '全部状态', value: '' },
+  ...(Object.keys(orderStatusLabel) as ManageOrderStatus[]).map((item) => ({
+    label: orderStatusLabel[item],
+    value: item,
+  })),
+]
+
+const paidCount = computed(() => rows.value.filter((item) => item.status === 'PAID').length)
+const fulfillingCount = computed(
+  () => rows.value.filter((item) => item.status === 'FULFILLING').length,
+)
+
+const range = computed(() => pageRange(pageNum.value, pageSize.value, total.value))
 const rangeStart = computed(() => range.value.start)
 const rangeEnd = computed(() => range.value.end)
 
-watch([keyword, statusFilter], () => {
-  page.value = 1
-})
-watch(pageCount, (count) => {
-  if (page.value > count) page.value = count
-})
-
-function changePageSize(size: number) {
-  pageSize.value = size
-  page.value = 1
+function summary(order: ManageOrder) {
+  const first = order.items[0]?.productNameSnapshot ?? '—'
+  return order.items.length > 1 ? `${first}等${order.items.length}项` : first
 }
 
-function openCommerceOrder() {
-  shippingAddress.value = ''
-  commerceModal.value = true
+function quantity(order: ManageOrder) {
+  return order.items.reduce((sum, item) => sum + item.quantity, 0)
 }
 
-async function submitCommerceOrder() {
-  const address = shippingAddress.value.trim()
-  if (!address) {
-    message.warning('请输入收货地址')
-    return
-  }
-  commerceLoading.value = true
+async function loadOrders() {
+  loading.value = true
   try {
-    const orderId = await createCommerceOrder({ shippingAddress: address })
-    commerceModal.value = false
-    message.success(`订单 #${orderId} 创建成功`)
+    const result = await fetchOrders({
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+      status: status.value || undefined,
+      patronId: patronId.value,
+    })
+    rows.value = result.records
+    total.value = result.total
+    pages.value = result.pages
   } catch (error) {
-    message.error(error instanceof Error ? error.message : '商城订单创建失败')
+    message.error(error instanceof Error ? error.message : '订单列表加载失败')
   } finally {
-    commerceLoading.value = false
+    loading.value = false
   }
 }
 
-const columns = computed<DataTableColumns<Order>>(() => [
+async function applyFilters() {
+  const raw = patronIdInput.value.trim()
+  if (raw) {
+    const value = Number(raw)
+    if (!Number.isInteger(value) || value <= 0) {
+      message.warning('买家 ID 必须为正整数')
+      return
+    }
+    patronId.value = value
+  } else {
+    patronId.value = undefined
+  }
+  pageNum.value = 1
+  await loadOrders()
+}
+
+async function resetFilters() {
+  status.value = ''
+  patronIdInput.value = ''
+  patronId.value = undefined
+  pageNum.value = 1
+  await loadOrders()
+}
+
+async function changePage(page: number) {
+  pageNum.value = page
+  await loadOrders()
+}
+
+async function changePageSize(size: number) {
+  pageSize.value = size
+  pageNum.value = 1
+  await loadOrders()
+}
+
+async function openDetail(order: ManageOrder) {
+  detailOpen.value = true
+  detailError.value = ''
+  selected.value = order
+  detailLoading.value = true
+  try {
+    selected.value = await fetchOrder(order.orderId)
+  } catch (error) {
+    detailError.value = error instanceof Error ? error.message : '订单详情加载失败'
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+async function handleAction(action: OrderAction) {
+  if (!selected.value || actionLoading.value) return
+  actionLoading.value = action
+  try {
+    const updated = await transitionOrder(selected.value.orderId, action)
+    selected.value = updated
+    message.success('订单状态已更新')
+    await loadOrders()
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '订单操作失败')
+  } finally {
+    actionLoading.value = undefined
+  }
+}
+
+const columns = computed<DataTableColumns<ManageOrder>>(() => [
   {
-    title: '订单编号',
-    key: 'id',
-    width: 200,
-    fixed: 'left',
-    render: (row) => h(CopyableId, { value: row.id, name: '订单编号' }),
+    title: '订单 ID',
+    key: 'orderId',
+    width: 120,
+    render: (row) => h(CopyableId, { value: row.orderId, prefix: '#', name: '订单ID' }),
   },
+  { title: '买家 ID', key: 'patronId', width: 100 },
   {
-    title: '会员',
-    key: 'member',
-    width: 130,
-    render: (row) => h('strong', { class: 'order-member' }, row.member),
+    title: '商品摘要',
+    key: 'summary',
+    width: 220,
+    render: (row) => h('strong', { class: 'order-member' }, summary(row)),
   },
-  { title: '游戏 / 服务', key: 'service', width: 190 },
-  { title: '陪玩师', key: 'worker', width: 120 },
-  { title: '订单金额', key: 'amount', width: 120 },
-  { title: '支付方式', key: 'pay', width: 120 },
+  { title: '件数', key: 'quantity', width: 70, render: (row) => quantity(row) },
+  { title: '总金额', key: 'totalAmount', width: 120, render: (row) => formatMoney(row.totalAmount) },
   {
-    title: '订单状态',
+    title: '状态',
     key: 'status',
-    width: 110,
-    render: (row) => h(StatusTag, { status: row.status, variant: 'business' }),
+    width: 100,
+    render: (row) =>
+      h(
+        NTag,
+        { type: orderStatusTone[row.status], size: 'small', bordered: false },
+        () => orderStatusLabel[row.status],
+      ),
   },
-  { title: '下单时间', key: 'created', width: 130 },
+  { title: '创建时间', key: 'createdAt', width: 170, render: (row) => formatDateTime(row.createdAt) },
   {
     title: '操作',
     key: 'actions',
-    width: 100,
+    width: 80,
     fixed: 'right',
     render: (row) =>
-      h(NSpace, { size: 2, wrap: false }, () => [
-        h(
-          NButton,
-          {
-            quaternary: true,
-            circle: true,
-            size: 'small',
-            title: '编辑订单',
-            onClick: () => openEdit(row),
-          },
-          { default: () => h(Pencil, { size: 15 }) },
-        ),
-        h(
-          NPopconfirm,
-          { onPositiveClick: () => removeRow(row) },
-          {
-            trigger: () =>
-              h(
-                NButton,
-                {
-                  quaternary: true,
-                  circle: true,
-                  size: 'small',
-                  title: '删除订单',
-                  type: 'error',
-                },
-                { default: () => h(Trash2, { size: 15 }) },
-              ),
-            default: () => `确认删除订单 ${row.id}？`,
-          },
-        ),
-      ]),
+      h(
+        NButton,
+        {
+          quaternary: true,
+          circle: true,
+          size: 'small',
+          title: '查看详情',
+          onClick: () => openDetail(row),
+        },
+        { default: () => h(Eye, { size: 15 }) },
+      ),
   },
 ])
 
-function updateFormField(key: string, value: string | null) {
-  form.value = { ...form.value, [key]: value ?? '' }
-}
+onMounted(loadOrders)
 </script>
 
 <template>
   <div class="business-page order-page">
     <section class="business-title">
       <div>
-        <h1>{{ orderMeta.title }}</h1>
-        <span>{{ orderMeta.desc }}</span>
+        <h1>订单管理</h1>
+        <span>查看订单明细并执行发货、退款等状态流转</span>
       </div>
     </section>
 
-    <StatCards :items="orderMeta.stats" :icons="statIcons" variant="business" />
+    <section class="business-stats order-summary">
+      <article>
+        <i class="tone-0"><PackageSearch /></i>
+        <div>
+          <p>订单总量</p>
+          <strong>{{ total }}</strong>
+          <small>来自服务器实时数据</small>
+        </div>
+      </article>
+      <article>
+        <i class="tone-1"><CircleDollarSign /></i>
+        <div>
+          <p>当前页待处理</p>
+          <strong>{{ paidCount }}</strong>
+          <small>PAID 状态</small>
+        </div>
+      </article>
+      <article>
+        <i class="tone-2"><Truck /></i>
+        <div>
+          <p>当前页处理中</p>
+          <strong>{{ fulfillingCount }}</strong>
+          <small>FULFILLING 状态</small>
+        </div>
+      </article>
+    </section>
 
-    <section class="order-table-panel list-table-panel panel">
-      <div class="order-table-head order-toolbar list-toolbar">
+    <section class="list-table-panel panel">
+      <div class="list-toolbar">
         <div class="list-toolbar-main">
           <div>
-            <h2>{{ orderMeta.tableTitle }}</h2>
-            <p>共 {{ rows.length }} 条演示数据</p>
+            <h2>订单列表</h2>
+            <p>共 {{ total }} 个订单</p>
           </div>
           <NSpace class="list-actions" :size="9">
-            <NButton @click="resetRows">
+            <NButton :loading="loading" @click="loadOrders">
               <template #icon><RefreshCcw :size="16" /></template>
               刷新
             </NButton>
-            <NButton type="primary" @click="openCommerceOrder">
-              <template #icon><Plus :size="17" /></template>
-              {{ orderMeta.action }}
-            </NButton>
           </NSpace>
         </div>
-        <NSpace class="order-filters list-filters" :size="8" wrap align="center">
-          <NInput v-model:value="keyword" clearable placeholder="输入关键词搜索">
-            <template #prefix><Search :size="16" /></template>
-          </NInput>
+        <NSpace class="list-filters" :size="8" wrap align="center">
           <NSelect
-            v-model:value="statusFilter"
-            aria-label="状态筛选"
-            :options="statusSelectOptions"
+            v-model:value="status"
+            aria-label="订单状态"
+            :options="statusOptions"
             style="width: 130px"
           />
-          <NButton secondary @click="exportRows">
-            <template #icon><ArrowDownToLine :size="16" /></template>
-            导出
-          </NButton>
+          <NInput
+            v-model:value="patronIdInput"
+            clearable
+            aria-label="买家ID"
+            placeholder="买家用户 ID"
+            style="width: 140px"
+            @keyup.enter="applyFilters"
+          >
+            <template #prefix><Search :size="16" /></template>
+          </NInput>
+          <NButton type="primary" :loading="loading" @click="applyFilters">查询</NButton>
+          <NButton :disabled="loading" @click="resetFilters">重置</NButton>
         </NSpace>
       </div>
 
-      <div class="order-table-host">
+      <div class="list-table-host">
         <NDataTable
           :columns="columns"
-          :data="pageRows"
+          :data="rows"
+          :loading="loading"
           :pagination="false"
-          :row-key="(row: Order) => row.id"
-          :scroll-x="1200"
+          :row-key="(row: ManageOrder) => row.orderId"
+          :scroll-x="1000"
           :single-line="false"
           striped
         />
       </div>
 
       <ListPagination
-        :page="page"
+        :page="pageNum"
         :page-size="pageSize"
-        :item-count="rows.length"
+        :item-count="total"
         :range-start="rangeStart"
         :range-end="rangeEnd"
-        @update:page="page = $event"
+        :disabled="loading"
+        @update:page="changePage"
         @update:page-size="changePageSize"
       />
     </section>
 
-    <NModal v-model:show="commerceModal" :mask-closable="false">
-      <NCard
-        class="order-form-modal"
-        title="创建商城订单"
-        :bordered="false"
-        size="huge"
-        role="dialog"
-        aria-modal="true"
-        closable
-        @close="commerceModal = false"
-      >
-        <p class="order-form-subtitle">根据当前登录账号的购物车创建订单</p>
-        <NForm label-placement="top">
-          <NFormItem label="收货地址" required>
-            <NInput
-              v-model:value="shippingAddress"
-              type="textarea"
-              :rows="3"
-              maxlength="255"
-              show-count
-              placeholder="请输入收货地址"
-            />
-          </NFormItem>
-        </NForm>
-        <template #footer>
-          <NSpace justify="end">
-            <NButton :disabled="commerceLoading" @click="commerceModal = false">取消</NButton>
-            <NButton type="primary" :loading="commerceLoading" @click="submitCommerceOrder">
-              确认下单
-            </NButton>
-          </NSpace>
-        </template>
-      </NCard>
-    </NModal>
-
-    <NModal v-model:show="modal" :mask-closable="false">
-      <NCard
-        class="order-form-modal"
-        :title="editingKey ? '编辑订单' : orderMeta.action"
-        :bordered="false"
-        size="huge"
-        role="dialog"
-        aria-modal="true"
-      >
-        <p class="order-form-subtitle">
-          {{ editingKey ? '修改字段并保存更新' : '填写必要信息后确认提交' }}
-        </p>
-        <NForm class="order-form-grid" label-placement="top">
-          <NFormItem v-for="field in orderMeta.fields" :key="field.key" :label="field.label">
-            <NSelect
-              v-if="field.type === 'select'"
-              :value="form[field.key]"
-              :options="field.options?.map((option) => ({ label: option, value: option }))"
-              :placeholder="field.placeholder || `请选择${field.label}`"
-              @update:value="(value) => updateFormField(field.key, value)"
-            />
-            <NInput
-              v-else
-              :value="form[field.key]"
-              :placeholder="field.placeholder"
-              @update:value="(value) => updateFormField(field.key, value)"
-            />
-          </NFormItem>
-        </NForm>
-        <template #footer>
-          <NSpace justify="end">
-            <NButton @click="modal = false">取消</NButton>
-            <NButton type="primary" @click="submit">确认提交</NButton>
-          </NSpace>
-        </template>
-      </NCard>
-    </NModal>
+    <OrderDetailDrawer
+      :show="detailOpen"
+      :loading="detailLoading"
+      :order="selected"
+      :error="detailError"
+      :action-loading="actionLoading"
+      @close="detailOpen = false"
+      @retry="selected && openDetail(selected)"
+      @action="handleAction"
+    />
   </div>
 </template>

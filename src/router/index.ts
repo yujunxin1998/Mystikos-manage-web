@@ -69,6 +69,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '数据报表', requiresAuth: true },
       },
       {
+        path: 'operation-logs',
+        name: 'operation-logs',
+        component: () => import('../views/operation-logs/OperationLogsView.vue'),
+        meta: { title: '操作日志', requiresAuth: true },
+      },
+      {
         path: 'settings',
         redirect: '/',
       },

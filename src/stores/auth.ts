@@ -16,7 +16,8 @@ import {
 } from '../api/auth-storage'
 import { fetchMyProfile } from '../api/profile'
 import { fetchUserPermissions } from '../api/users'
-import type { AuthUser, LoginForm, UserProfile, UserRole } from '../types'
+import { appConfig } from '../config'
+import type { AuthUser, LoginForm, LoginRequest, UserProfile, UserRole } from '../types'
 import { hasPermissionCode, type UserActionPermission } from '../utils/permissions'
 import { encryptLoginCredential } from '../utils/loginEncryption'
 import { avatarInitial, resolveDisplayName } from '../utils/roles'
@@ -87,21 +88,33 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function login(form: LoginForm): Promise<void> {
-    loading.value = true
-    try {
-      const loginKey = await getLoginPublicKey()
-      if (loginKey.algorithm !== 'RSA-OAEP-256') {
-        throw new Error(`不支持的登录加密算法：${loginKey.algorithm}`)
-      }
-      const encryptedCredential = await encryptLoginCredential(form.password, loginKey.publicKey)
-      const result = await loginRequest({
+  async function buildLoginRequest(form: LoginForm): Promise<LoginRequest> {
+    if (!appConfig.loginEncryptionEnabled) {
+      return {
         channel: form.channel,
         identifier: form.identifier.trim(),
         credentialType: 'PASSWORD',
-        keyId: loginKey.keyId,
-        encryptedCredential,
-      })
+        credential: form.password,
+      }
+    }
+    const loginKey = await getLoginPublicKey()
+    if (loginKey.algorithm !== 'RSA-OAEP-256') {
+      throw new Error(`不支持的登录加密算法：${loginKey.algorithm}`)
+    }
+    const encryptedCredential = await encryptLoginCredential(form.password, loginKey.publicKey)
+    return {
+      channel: form.channel,
+      identifier: form.identifier.trim(),
+      credentialType: 'PASSWORD',
+      keyId: loginKey.keyId,
+      encryptedCredential,
+    }
+  }
+
+  async function login(form: LoginForm): Promise<void> {
+    loading.value = true
+    try {
+      const result = await loginRequest(await buildLoginRequest(form))
       accessToken.value = result.accessToken
       refreshToken.value = result.refreshToken
       storeAuthValue(ACCESS_TOKEN_KEY, result.accessToken, form.remember)

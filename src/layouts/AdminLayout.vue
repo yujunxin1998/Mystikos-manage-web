@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   Moon,
+  ScrollText,
   Search,
   ShoppingBag,
   Sparkles,
@@ -72,6 +73,7 @@ const nav = computed(() => [
   { label: '商品管理', path: '/products', icon: ShoppingBag },
   { label: '财务中心', path: '/finance', icon: Wallet },
   { label: '数据报表', path: '/reports', icon: FileBarChart },
+  { label: '操作日志', path: '/operation-logs', icon: ScrollText },
 ])
 
 const pageTitle = computed(() => {

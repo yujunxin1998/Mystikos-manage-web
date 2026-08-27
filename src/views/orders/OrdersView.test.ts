@@ -1,12 +1,17 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
 import { NConfigProvider, NMessageProvider } from 'naive-ui'
-import { defineComponent, h, nextTick } from 'vue'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import OrdersView from './OrdersView.vue'
-import { createCommerceOrder } from '../../api/commerce'
+import { fetchOrders } from '../../api/manage-orders'
+import type { ManageOrder } from '../../types'
 
-vi.mock('../../api/commerce', () => ({ createCommerceOrder: vi.fn() }))
+vi.mock('../../api/manage-orders', () => ({
+  fetchOrders: vi.fn(),
+  fetchOrder: vi.fn(),
+  transitionOrder: vi.fn(),
+}))
 
 beforeAll(() => {
   vi.stubGlobal(
@@ -23,6 +28,31 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+const orderFixture: ManageOrder = {
+  orderId: 2099,
+  patronId: 42,
+  items: [
+    {
+      productId: 88,
+      productNameSnapshot: '陪玩服务 2 小时',
+      unitPriceSnapshot: 120,
+      quantity: 2,
+      subtotal: 240,
+    },
+    {
+      productId: 89,
+      productNameSnapshot: '陪玩服务 1 小时',
+      unitPriceSnapshot: 60,
+      quantity: 1,
+      subtotal: 60,
+    },
+  ],
+  totalAmount: 300,
+  shippingAddress: '浙江省杭州市西湖区',
+  status: 'PAID',
+  createdAt: '2026-08-27T10:00:00',
+}
+
 function mountOrdersView() {
   const pinia = createPinia()
   const Host = defineComponent({
@@ -36,55 +66,58 @@ function mountOrdersView() {
         })
     },
   })
-
   return mount(Host, { global: { plugins: [pinia] } })
 }
 
 describe('OrdersView', () => {
-  it('renders a Naive UI data table and filters its rows by keyword', async () => {
-    const wrapper = mountOrdersView()
-
-    expect(wrapper.find('.order-toolbar').exists()).toBe(true)
-    expect(wrapper.find('.n-data-table').exists()).toBe(true)
-    expect(wrapper.find('[aria-label="状态筛选"]').exists()).toBe(true)
-    const keyword = wrapper.get('input[placeholder="输入关键词搜索"]')
-    await keyword.setValue('风起云涌')
-    await nextTick()
-
-    expect(wrapper.text()).toContain('KN202608240018')
-    expect(wrapper.text()).not.toContain('KN202608240017')
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(fetchOrders).mockResolvedValue({
+      records: [orderFixture],
+      total: 1,
+      pageNum: 1,
+      pageSize: 10,
+      pages: 1,
+    })
   })
 
-  it('opens the create-order modal from the primary action', async () => {
+  it('渲染服务端订单列表，且不提供创建/编辑/删除', async () => {
     const wrapper = mountOrdersView()
-    const createButton = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('创建订单'))
+    await flushPromises()
 
-    expect(createButton).toBeDefined()
-    await createButton!.trigger('click')
-    await nextTick()
-
-    expect(document.body.querySelector('[aria-modal="true"]')).not.toBeNull()
-    expect(document.body.textContent).toContain('收货地址')
+    expect(wrapper.text()).toContain('陪玩服务 2 小时等2项')
+    expect(wrapper.text()).toContain('¥300.00')
+    expect(wrapper.text()).toContain('已支付')
+    expect(wrapper.text()).not.toContain('新增订单')
+    expect(wrapper.text()).not.toContain('编辑订单')
+    expect(wrapper.text()).not.toContain('删除订单')
   })
 
-  it('通过商城接口创建订单', async () => {
-    vi.mocked(createCommerceOrder).mockResolvedValue(2099)
+  it('按买家 ID 提交筛选', async () => {
     const wrapper = mountOrdersView()
-    const createButton = wrapper.findAll('button').find((button) => button.text().includes('创建订单'))
-    await createButton!.trigger('click')
-    await nextTick()
+    await flushPromises()
 
-    const address = document.body.querySelector<HTMLTextAreaElement>('textarea[placeholder="请输入收货地址"]')
-    expect(address).not.toBeNull()
-    address!.value = '浙江省杭州市西湖区'
-    address!.dispatchEvent(new Event('input', { bubbles: true }))
-    await nextTick()
-    const submit = Array.from(document.body.querySelectorAll('button')).find((button) => button.textContent?.includes('确认下单'))
-    submit?.click()
-    await nextTick()
+    await wrapper.get('input[placeholder="买家用户 ID"]').setValue('42')
+    const queryButton = wrapper.findAll('button').find((button) => button.text().includes('查询'))
+    await queryButton!.trigger('click')
+    await flushPromises()
 
-    expect(createCommerceOrder).toHaveBeenCalledWith({ shippingAddress: '浙江省杭州市西湖区' })
+    expect(fetchOrders).toHaveBeenLastCalledWith(
+      expect.objectContaining({ patronId: 42, pageNum: 1, pageSize: 10 }),
+    )
+  })
+
+  it('重置后不携带筛选条件', async () => {
+    const wrapper = mountOrdersView()
+    await flushPromises()
+
+    await wrapper.get('input[placeholder="买家用户 ID"]').setValue('42')
+    const resetButton = wrapper.findAll('button').find((button) => button.text().includes('重置'))
+    await resetButton!.trigger('click')
+    await flushPromises()
+
+    expect(fetchOrders).toHaveBeenLastCalledWith(
+      expect.objectContaining({ pageNum: 1, pageSize: 10 }),
+    )
   })
 })

@@ -23,8 +23,9 @@ export interface LoginRequest {
   channel: LoginChannel
   identifier: string
   credentialType: 'PASSWORD'
-  keyId: string
-  encryptedCredential: string
+  credential?: string
+  keyId?: string
+  encryptedCredential?: string
 }
 
 export interface LoginPublicKeyResponse {

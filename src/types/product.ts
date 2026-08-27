@@ -1,12 +1,35 @@
-import type { RowRecord } from './common'
+export type ProductStatus = 'ON_SHELF' | 'OFF_SHELF'
 
-export interface Product extends RowRecord {
-  image: string
+export interface ProductView {
+  id: number
+  categoryId?: number
   name: string
-  id: string
-  category: string
-  price: string
-  stock: string
-  companion: string
-  status: string
+  description?: string
+  price: number
+  images: string[]
+  status: ProductStatus
+}
+
+export interface ProductQuery {
+  status?: ProductStatus
+  pageNum: number
+  pageSize: number
+}
+
+export interface CreateProductRequest {
+  categoryId?: number
+  name: string
+  description?: string
+  price: number
+  images?: string[]
+  initialStock: number
+}
+
+export interface UpdateProductRequest {
+  categoryId?: number
+  name: string
+  description?: string
+  price: number
+  images?: string[]
+  status?: ProductStatus
 }

@@ -1,5 +1,12 @@
 export type { RowRecord, ColumnDef, StatItem, FormField, ModuleMeta } from './common'
-export type { Order, DashboardOrder, CreateCommerceOrderRequest } from './order'
+export type {
+  DashboardOrder,
+  ManageOrder,
+  ManageOrderQuery,
+  ManageOrderStatus,
+  OrderAction,
+  OrderLineItemResponse,
+} from './order'
 export type {
   Companion,
   CompanionPerformance,
@@ -9,10 +16,18 @@ export type {
   CreateCompanionRequest,
   TagView,
 } from './worker'
-export type { Product } from './product'
+export type {
+  CreateProductRequest,
+  ProductQuery,
+  ProductStatus,
+  ProductView,
+  UpdateProductRequest,
+} from './product'
 export type { FinanceRecord } from './finance'
 export type { ReportRank } from './report'
 export type { SettingItem } from './setting'
+export type { OperationLog, OperationLogQuery } from './operation-log'
+export type { UploadResult } from './file'
 export type { ApiResponse, PageResult } from './api'
 export type {
   AuthUser,

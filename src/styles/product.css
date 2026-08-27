@@ -16,3 +16,88 @@
   border-radius: var(--app-radius-md, 10px);
   display: block;
 }
+
+/* 商品图片缩略图与上传区 */
+
+.product-image {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--app-radius-sm);
+  overflow: hidden;
+  background: var(--app-surface-muted);
+  border: 1px solid var(--app-border);
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-image__fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--app-text-muted);
+}
+
+.product-upload {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.product-upload-item {
+  position: relative;
+  width: 72px;
+}
+
+.product-upload-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  box-shadow: var(--app-shadow-subtle);
+}
+
+.product-upload-add {
+  width: 72px;
+  height: 72px;
+  border: 1px dashed var(--app-border);
+  border-radius: var(--app-radius-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--app-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
+}
+
+.product-upload-add:hover {
+  color: var(--app-primary);
+  border-color: var(--app-primary);
+  background: var(--app-primary-soft);
+}
+
+.product-detail-media {
+  width: 160px;
+}
+
+.product-detail-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.product-detail-thumbs .product-image {
+  width: 72px;
+}

@@ -31,12 +31,19 @@ vi.mock('../api/users', () => ({
   fetchUserPermissions: vi.fn(),
 }))
 
+const { appConfigMock } = vi.hoisted(() => ({
+  appConfigMock: { loginEncryptionEnabled: true },
+}))
+
+vi.mock('../config', () => ({ appConfig: appConfigMock }))
+
 describe('auth store', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     localStorage.clear()
     sessionStorage.clear()
     vi.clearAllMocks()
+    appConfigMock.loginEncryptionEnabled = true
   })
 
   it('登录后拉取当前用户资料并展示昵称', async () => {
@@ -96,6 +103,46 @@ describe('auth store', () => {
     expect(authStore.can('user.ban')).toBe(false)
     expect(localStorage.getItem(ACCESS_TOKEN_KEY)).toBe('access-token')
     expect(localStorage.getItem(REFRESH_TOKEN_KEY)).toBe('refresh-token')
+  })
+
+  it('关闭登录加密时直接提交明文密码', async () => {
+    appConfigMock.loginEncryptionEnabled = false
+    vi.mocked(loginRequest).mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      userId: 42,
+    })
+    vi.mocked(getCurrentUser).mockResolvedValue({
+      userId: 42,
+      roles: ['ADMIN'],
+      status: 'ACTIVE',
+    })
+    vi.mocked(fetchMyProfile).mockResolvedValue({
+      userId: 42,
+      nickname: '夜航星',
+      phone: '13800138000',
+      email: 'admin@mystikos.local',
+      roles: ['ADMIN'],
+      status: 'ACTIVE',
+    })
+    vi.mocked(fetchUserPermissions).mockResolvedValue([])
+    const authStore = useAuthStore()
+
+    await authStore.login({
+      channel: 'EMAIL',
+      identifier: 'admin@mystikos.local',
+      password: 'plain-pass',
+      remember: false,
+    })
+
+    expect(getLoginPublicKey).not.toHaveBeenCalled()
+    expect(encryptLoginCredential).not.toHaveBeenCalled()
+    expect(loginRequest).toHaveBeenCalledWith({
+      channel: 'EMAIL',
+      identifier: 'admin@mystikos.local',
+      credentialType: 'PASSWORD',
+      credential: 'plain-pass',
+    })
   })
 
   it('退出时先清本地态再通知服务端，失败也保持未登录', async () => {
