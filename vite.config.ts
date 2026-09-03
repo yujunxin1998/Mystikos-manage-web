@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: env.VITE_API_PROXY_TARGET || 'http://116.62.218.227:8099',
+        target: env.VITE_API_PROXY_TARGET || 'https://www.joinmystikos.com',
         changeOrigin: true,
       },
     },

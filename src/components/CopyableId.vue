@@ -51,7 +51,6 @@ async function handleCopy(event: MouseEvent) {
     </NTooltip>
     <NButton
       text
-      quaternary
       size="tiny"
       :aria-label="`复制${name} ${copyValue}`"
       @click="handleCopy"
